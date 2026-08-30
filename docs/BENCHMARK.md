@@ -18,9 +18,9 @@ verdict `ZOMBIE_FPS_BACKEND_BENCHMARK_DATA: VERIFIED`.
 > is that 2 client GETs and 67 localhost GET probes are now correctly excluded from the origin table.
 
 Ownership: **Backend** owns hardware/inference facts · **Client** owns Codex/orchestration/Skills/session/task
-facts. Values are labelled `MEASURED`, `DERIVED`, `VERIFIED`, `NOT_AVAILABLE`, `NOT_VERIFIED`, or
-`AWAITING_RESCOPE`. Two telemetry axes are permanently `NOT_AVAILABLE` for this window and are documented
-rather than estimated — see **§9.3**.
+facts. Values are labelled `MEASURED`, `DERIVED`, `VERIFIED`, `NOT_AVAILABLE` or `NOT_VERIFIED`. No
+`AWAITING_*` state remains. Two telemetry axes are permanently `NOT_AVAILABLE` for this window and are
+documented rather than estimated — see **§9.3**.
 
 **Companion document:** `ZOMBIE_FPS_LOCAL_AI_REFERENCE_BENCHMARK_INPUT_PROVENANCE.md` — the complete
 USER → LOCAL AI instruction chain, verbatim inputs, and the rejected-launch contamination record.
@@ -208,7 +208,7 @@ Files visible to the worker in the project root (SHA-256 first 16):
 | Requests through the client route (run window) | **743** | MEASURED |
 | 5xx through the route | **0** | MEASURED |
 | Truncation events | NOT_AVAILABLE (not exposed by the client) | — |
-| Tokens per request | NOT_AVAILABLE client-side | AWAITING_BACKEND |
+| Tokens per request | NOT_AVAILABLE client-side; Backend reports the distribution (§10.1) | RESOLVED |
 | Context remaining at checkpoints | NOT_AVAILABLE (not exposed) | — |
 
 ---
@@ -413,7 +413,7 @@ The backend imposes **no output cap**. Any cap during the run was request-side a
 | ik_llama build version/commit | NOT_VERIFIED | `/props` returns `build_info = null`, the executable carries no FileVersion/ProductVersion resource, and the binary emits no version string over HTTP. `8337e4cd386` per handover notes is **not independently verified**. The executable SHA256 `9CA87C99…E41F` is the hard, checkable identity. |
 | Model publisher / source | NOT_VERIFIED | no `general.organization`, `general.repo_url` or `general.basename` in the file. Handover notes attribute it to "cHunter" — **hearsay, not file evidence**. |
 | imatrix | NOT_VERIFIED | the `i1` infix conventionally denotes an imatrix quant, but **no imatrix key exists** in the metadata |
-| TTFT | NOT_AVAILABLE | not measurable server-side; client-observed TTFT includes network transit and queueing. Server **prompt-eval duration** is the nearest honest proxy — it is *not* TTFT and is not presented as one. |
+| TTFT | NOT_AVAILABLE | not measurable server-side; client-observed TTFT includes network transit and queueing. **Prompt-eval duration is reported in §10.1 as its own server-side metric and must NOT be read as a TTFT proxy** — no TTFT figure is inferred from it anywhere in this record. |
 | Truncation flag | NOT_AVAILABLE | ik_llama emits no `truncated` field; ceiling states are DERIVED from prompt+gen vs `n_ctx−1`. None was invented. |
 | mmap / mlock effective state | NOT_AVAILABLE | neither `--mlock` nor `--no-mmap` appears in argv (verified), so both sit at runtime defaults; the *effective* state is not reported by `/props` and is not asserted |
 | Actual layer placement | NOT_VERIFIED | `-ngl 999` requests all 64 blocks on CUDA, but the placement banner predates the window and was not re-parsed, so realised placement is not asserted |
@@ -457,7 +457,7 @@ parameter change.
 | Total wall-clock | 8,783 s (2 h 26 m 22 s) | MEASURED (client) |
 | Worker attempts / continuations | 37 / 35 | MEASURED (client) |
 | Requests through route | 743, 0 × 5xx | MEASURED (client) |
-| Prefill / decode / latency / token totals | see 10.1 — **AWAITING_RESCOPE** | Backend |
+| Prefill / decode / latency / token totals | see §10.1 — **VERIFIED**, closed window | Backend |
 | TTFT | NOT_AVAILABLE (not measurable server-side) | Backend |
 | Backend busy time / slot occupancy | **NOT_AVAILABLE** — instrument was polling the wrong port (§9.3) | Backend |
 | GPU utilisation / VRAM over window | **NOT_AVAILABLE** — no sampler running (§9.3) | Backend |
