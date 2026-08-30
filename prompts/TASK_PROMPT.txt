@@ -1,0 +1,77 @@
+Before substantive implementation, inspect the installed Skills relevant to this task, read their SKILL.md content, and apply their methods where materially useful.
+
+Priority for this run:
+  1. threejs-qa-release       — deterministic test hooks (__THREE_GAME_TEST_HOOKS__ / __AGENT_STATE__ convention),
+                                automated playtest. Read references/playtest-bot.md. This is how you PROVE things.
+  2. threejs-debug-profiler   — first-person camera/input debugging, transforms, pointer behaviour.
+                                Read references/debug-profile-checklists.md and references/checklists/scene-debugging.md.
+  3. threejs-gameplay-systems — FPS controls, camera-relative movement, raycast/hit detection, update order,
+                                game feel. Read references/gameplay-workflows.md.
+  4. threejs-game-ui-designer — centre crosshair and floating health-bar UI.
+  5. threejs-aaa-graphics-builder — readable block-built visuals, lighting/material variation.
+  6. game-engine / game-developer — general 3D web game techniques (references/3d-web-games.md).
+Use threejs-game-director only if it materially helps. Do not force irrelevant Skills.
+
+Then read GAME_GOAL.md and AGENTS.md in this folder and build what GAME_GOAL.md specifies.
+
+This folder is served at THE_URL_BELOW — put your entry HTML at index.html and open that URL to test.
+Three.js is vendored locally at ./three.module.js (no CDN needed, no external assets).
+
+=== THE SINGLE MOST IMPORTANT THING ===
+A PREVIOUS BUILD WAS MATHEMATICALLY SELF-CONSISTENT AND STILL WRONG. Its player transform, its HUD, and its
+ground-tile labels all agreed with each other perfectly — and on screen, front/back were reversed and
+left/right were reversed. The human player experienced it as backwards.
+
+So: INTERNAL CONSISTENCY IS NOT EVIDENCE OF CORRECTNESS. Three internal sources agreeing proves nothing about
+what the player sees. You must prove orientation from SCREEN-SPACE PROJECTION.
+
+At spawn the player is at logical (0,0) looking toward logical +Y:
+   W -> (0,1) must be VISIBLY IN FRONT      S -> (0,-1) behind
+   A -> (-1,0) must be VISIBLY ON THE LEFT  D -> (1,0) visibly on the RIGHT
+   W+A (-1,1)   W+D (1,1)   S+A (-1,-1)   S+D (1,-1)
+
+You must prove the visible directions are correct, and it is your responsibility to choose how. Whatever
+method you pick, it must reflect what actually appears on screen rather than internal numbers agreeing with
+each other. If the directions come out swapped, the build is reversed no matter what your HUD says.
+
+=== CAMERA-RELATIVE MOVEMENT (this is a real FPS) ===
+After the player turns with the mouse: W = camera facing projected onto the ground; S = opposite;
+A = strafe screen-LEFT; D = strafe screen-RIGHT. Looking up/down must not move the player vertically.
+Verify at initial facing, after ~90 deg right, and after ~90 deg left. Reversed A/D or W/S is BLOCKING.
+
+=== CROSSHAIR-TO-HIT (BLOCKING) ===
+Crosshair at the EXACT viewport centre. What the crosshair covers must be what the shot hits. Derive the
+authoritative aim ray from the camera centre, NOT from a decorative gun barrel (the muzzle may be visually
+offset; hit detection must follow the crosshair). Build an aiming calibration target and prove the ray and the
+crosshair agree. Also prove a near-miss: aim just beside a zombie -> no hit registered.
+
+=== THE GAME ===
+One large indoor room, block-built floor, player near one end, exactly TWO zombies on the far side, both
+visible soon after spawn. First person: mouse look + pointer lock, camera-relative WASD, centre crosshair,
+block-built fake arms + machine gun, infinite ammo, rapid fire while held.
+Zombie A stands still. Zombie B walks slowly toward the player. Both: block-built humanoid silhouette, health
+bar above the head, exactly 5 HP — each valid hit removes 1, dies on the 5th (not 4th, not 6th), readable hit
+feedback, obvious death feedback, dead zombie stops being a live target.
+Visuals: multiple blocks per body, decent silhouettes, lighting/material variation — better than bare cubes.
+
+=== TEST HOOKS ===
+Expose window.__AGENT_STATE__ with: player logical+world position, camera yaw, camera forward vector,
+crosshair target, last shot hit/miss + target id, both zombies' health/positions, ready. Plus a deterministic
+fire() and a way to set yaw/position for testing. Keep hooks working even when debug visuals are hidden.
+
+=== SUGGESTED ORDER ===
+room + first-person camera -> correct initial facing -> verify initial WASD by screen projection ->
+camera-relative movement -> verify after rotation -> centre crosshair -> centre-view ray -> calibration target
+and prove crosshair/ray agreement -> hands + gun -> two zombies -> health bars -> 5-hit death ->
+Zombie B slow approach -> visual polish -> full runtime verification.
+
+=== VERIFICATION STANDARD ===
+BUILD PASS is not GAMEPLAY VERIFIED. PAGE LOADS is not FPS VERIFIED. RAYCAST EXISTS is not CROSSHAIR ALIGNMENT
+VERIFIED. Use codex-browser (`codex-browser help`) to open the page, read state, eval expressions, send keys,
+and screenshot. Separate mechanically verified / visually inspected / human-only (real pointer-lock feel).
+
+=== STOP CONDITION ===
+When the game genuinely works — correct human-visible movement, camera-relative movement, centre crosshair,
+crosshair-to-hit alignment, machine gun, infinite ammo, two zombies (one stationary, one approaching), health
+bars, exactly five hits to kill, runtime verified, no fatal page errors — write REPORT.md with your evidence
+(including the screen-projection proof and the 5-hit sequences) and stop. Do not stop after scaffolding.

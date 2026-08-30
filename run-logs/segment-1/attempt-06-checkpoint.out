@@ -1,0 +1,151 @@
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: high
+reasoning summaries: none
+session id: 01a0513c-a1c1-7901-942a-c4c4bf132321
+--------
+user
+CONTEXT CHECKPOINT — you are about to hand this task off to a FRESH session (to avoid context exhaustion). Write or refresh ./.agent-state/checkpoint.md NOW, concise and machine-usable, with exactly these sections, then STOP (do no other work):
+## TASK — original objective + immutable constraints
+## CURRENT PRODUCT STATE — key files, architecture, current runtime status
+## COMPLETED — milestones already verified
+## UNRESOLVED — concrete current defects + the evidence for them
+## LAST TEST — the command/action you last ran and its result
+## NEXT INTENDED ACTION — the single immediate next step
+## SKILLS — which Skills you loaded and which methods are currently relevant
+## EVIDENCE — important paths / hashes / screenshots
+## DO NOT REPEAT — approaches already disproven
+Write the file and stop.
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+context compacted
+warning: Heads up: Long threads and multiple compactions can cause the model to be less accurate. Start a new thread when possible to keep threads small and targeted.
+warning: Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+exec
+/bin/zsh -lc 'cat ./.agent-state/checkpoint.md 2>/dev/null; echo ---; ls -la' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+# Checkpoint — zombie FPS (restored after compact)
+
+## State
+- Build COMPLETE in `game.js` (717 lines) + `index.html`. Served at http://127.0.0.1:8802/ (curl 200).
+- Hooks: window.__AGENT_STATE__ + window.__THREE_GAME_TEST_HOOKS__ (fire, setYaw, setPitch, setPlayerPosition,
+  setZombiePosition, resetZombieHp, respawn, setDebugLabels, setCalibrationTarget, projectToScreen,
+  projectLogical, holdKey/releaseKey/releaseAllKeys, getCamera, getState).
+- Viewport 1280x800, center (640,400).
+
+## Coordinate convention (game.js)
+- logical (x,z) -> world (x, 0, -z). Spawn (0,0), yaw=0 -> fwd world (0,0,-1) = logical +Y.
+- yaw>0 = turn right; fwd=(sin yaw,0,-cos yaw); right=(cos yaw,0,sin yaw).
+- Zombies: A logical (-2.5,11) stationary; B (2.5,11) walks toward player, stops at dist<=2.2. HP=5 each.
+
+## Bug fixed earlier (critical)
+syncCamera() reset camera.rotation but not camera.quaternion; Three.js derives matrixWorld from the
+quaternion -> stale aim ray. Fixed with camera.quaternion.identity() (game.js:162 area).
+
+## Verified earlier (mechanical, codex-browser eval)
+1. Crosshair DOM center == viewport center (640,400) EXACT.
+2. Screen-projection proof at spawn: (0,1) ndc z=0.900 in front, sx=640 sy=1061 (front); (0,-1) behind;
+   diagonals: (-1,1) ndc.x=-0.860 left-front; (1,1) +0.860 right-front; (-1,-1)/(1,-1) behind.
+   => W front, S back, A left, D right, all 8 combos correct.
+3. Movement yaw=0: W (0,+4.299) S (0,-4.298) A (-4.298,0) D (+3.999,0).
+4. Camera-relative: yaw=+90deg W (+4.099,0) A (0,+4.398) D (0,-4.199); yaw=-90deg W (-3.999,0) A (0,-4.1) D (0,+4.499).
+5. Pitch 0.9 + W -> y stays 1.7.
+6. Calibration target logical (0,11) h=1.7 -> screen (640,400) ndc(0,0) at yaw=0.
+
+## REMAINING (this session)
+1. Re-verify aim post-fix: aim A -> crosshair.targetId 'A'; offset yaw -> near-miss null + fire miss; aim B -> 'B'.
+2. 5-hit kill sequences for A and B (hp 4,3,2,1,0; alive=false only on 5th; corpse not targetable).
+3. Zombie B approach: distance decreasing, stops at <=2.2.
+4. Screenshot(s) to /tmp (hide start overlay first).
+5. Write REPORT.md, then STOP.
+---
+total 2600
+drwxr-xr-x  12 user  staff      384 Aug 30 13:50 .
+drwxr-xr-x  35 user  staff     1120 Aug 30 13:41 ..
+drwxr-xr-x   3 user  staff       96 Aug 30 14:11 .agent-state
+drwxr-xr-x  10 user  staff      320 Aug 30 13:45 .git
+-rw-r--r--   1 user  staff       96 Aug 30 14:26 agent-status.json
+-rw-r--r--   1 user  staff     2142 Aug 30 13:42 AGENTS.md
+-rw-r--r--   1 user  staff     5529 Aug 30 13:43 GAME_GOAL.md
+-rw-r--r--   1 user  staff    26934 Aug 30 14:20 game.js
+-rw-r--r--   1 user  staff     3199 Aug 30 13:47 index.html
+drwxr-xr-x  14 user  staff      448 Aug 30 14:26 sup-log
+-rw-r--r--   1 user  staff     5650 Aug 30 13:43 TASK_PROMPT.txt
+-rw-r--r--   1 user  staff  1272972 Aug 30 13:41 three.module.js
+
+exec
+/bin/zsh -lc "cat > ./.agent-state/checkpoint.md <<'EOF'
+# Checkpoint — zombie FPS (clean room, zombie-fps-local-ai)
+
+## TASK
+Build/verify the FPS in THIS folder per GAME_GOAL.md + AGENTS.md; when it genuinely works, write REPORT.md and STOP.
+Immutable constraints:
+- RULE ZERO: internal consistency is NOT evidence. Prove orientation from SCREEN-SPACE PROJECTION (ndc signs / projected screen coords), not from internal numbers agreeing.
+- Clean room: never read/copy code from other projects (esp. old fps-grid-calibration). Three.js local only (./three.module.js), no CDN/external assets.
+- Blocking defects (must have none): reversed W/S or A/D; movement not camera-relative after turning; crosshair not at exact viewport centre; crosshair-to-hit misalignment; zombie dying on 4th or surviving 5th valid hit; fatal page errors.
+- Movement: W = camera forward projected on ground, S = opposite, A = strafe screen-left, D = strafe screen-right; pitch must not move player vertically.
+- Aim: authoritative ray from camera centre (crosshair), NOT from gun barrel.
+- Two zombies: A stationary, B walks slowly toward player (stops ~dist<=2.2). Both block-built humanoids, health bar over head, exactly 5 HP (5th valid hit kills, not 4th/6th), dead zombie no longer targetable.
+- Evidence standard: mechanically verified vs visually inspected vs human-only must be separated in REPORT.md.
+
+## CURRENT PRODUCT STATE
+- Files: "'`index.html` (entry, viewport 1280x800), `game.js` (~717 lines, whole game), `three.module.js` (vendored).
+- Served at http://127.0.0.1:8802/ (curl 200). Entry = index.html.
+- IMPORTANT: `THREE` is NOT a page global (ES module import) — do NOT reference THREE in codex-browser eval.
+- Hooks: window.__AGENT_STATE__ (player logical+world pos, camera yaw/pitch, camera forward, crosshair target, last shot hit/miss+targetId, both zombies health/positions, ready) and window.__THREE_GAME_TEST_HOOKS__ (fire, setYaw, setPitch, setPlayerPosition, setZombiePosition, resetZombieHp, respawn, setDebugLabels, setCalibrationTarget, projectToScreen, projectLogical, holdKey/releaseKey/releaseAllKeys, getCamera, getState).
+- Coordinate convention (game.js): logical (x,z) -> world (x,0,-z). Spawn (0,0), yaw=0 -> fwd world (0,0,-1) = logical +Y. yaw>0 = turn right; fwd=(sin yaw,0,-cos yaw); right=(cos yaw,0,sin yaw).
+- Zombies: A logical (-2.5,11) stationary; B (2.5,11) walks toward player, stops at dist<=2.2. Both HP=5.
+- Runtime status: page loads, no fatal errors observed; movement/crosshair verified; AIM-RAY DEFECT OPEN (see UNRESOLVED).
+
+## COMPLETED (mechanically verified via codex-browser eval)
+1. Crosshair DOM center == viewport center (640,400) EXACT (getBoundingClientRect, re-confirmed).
+2. Screen-projection proof at spawn: (0,1) ndc z=0.900 in front, sx=640 sy=1061 (front); (0,-1) behind; diagonals (-1,1) ndc.x=-0.860 left-front, (1,1) +0.860 right-front, (-1,-1)/(1,-1) behind => W front, S back, A left, D right, all 8 combos correct.
+3. Movement yaw=0: W (0,+4.299), S (0,-4.298), A (-4.298,0), D (+3.999,0).
+4. Camera-relative: yaw=+90deg W (+4.099,0) A (0,+4.398) D (0,-4.199); yaw=-90deg W (-3.999,0) A (0,-4.1) D (0,+4.499).
+5. Pitch 0.9 + W -> player y stays 1.7 (no vertical drift).
+6. Calibration target logical (0,11) h=1.7 -> screen (640,400), ndc (0,0) at yaw=0 (crosshair<->ray agreement on centre line).
+7. Fixed earlier: syncCamera() stale-quaternion bug (camera.rotation reset but not quaternion -> stale aim ray). Fixed via camera.quaternion.identity() (game.js ~line 162).
+
+## UNRESOLVED
+BLOCKING: crosshairTarget() returns null in EVERY tested aim — including zombie A placed directly on the centre line at logical (0,11) with yaw=0/pitch=0, where the torso box (world x=0, y=0.85..1.6, z=-11.17..-10.83) plainly contains the centre ray. Confirmed by manual math: torso center in camera space = (0,-0.475,-10) i.e. dead-centre, in front. Manual ray math says it MUST hit, but game'"'s crosshairTarget() AND fire() both report no hit.
+Suspects to inspect: (a) zombieWorldHitboxes() rotation math / box construction (game.js ~line 323); (b) resetZombieHp/setZombiePosition not actually moving the hitbox source; (c) raycaster/aimRay() using stale camera matrix (game.js ~lines 401-420, fire ~line 475).
+Debug plan: add temp hook or eval dumping zombieWorldHitboxes() boxes + ray origin/direction; compare.
+This is a blocking crosshair-to-hit defect — must be FIXED, not worked around.
+
+## LAST TEST
+codex-browser eval: placed zombie A at logical (0,11), yaw=0, pitch=0, waited a frame, read __AGENT_STATE__.
+Result: crosshair target = null (no hit), despite torso box provably containing the centre ray. Also verified torso center camera-space = (0,-0.475,-10) via manual transform.
+
+## NEXT INTENDED ACTION
+Debug the aim-ray bug: inspect game.js zombieWorldHitboxes (~L323), aimRay/crosshairTarget (~L401-420), fire (~L475). Add a temporary debug hook (or eval) that dumps the hitbox list + ray origin/direction, find why the ray misses the torso box, fix it. Then re-verify: aim A -> targetId 'A'; aim B -> 'B'; offset yaw -> near-miss null + fire() miss.
+
+## SKILLS
+Loaded (relevant): threejs-qa-release (test hooks __THREE_GAME_TEST_HOOK__/__AGENT_STATE__ convention, playtest-bot.md), threejs-debug-profiler (camera/input/transform debugging, scene-debugging checklist), threejs-gameplay-systems (FPS controls, camera-relative movement, raycast/hit, update order). threejs-game-ui-designer (crosshair/health bar), threejs-aaa-graphics-builder (block visuals), game-engine/game-developer (3d-web-games.md) available as needed. threejs-game-director not needed.
+
+## EVIDENCE
+- Served: http://127.0.0.1:8802/ (index.html).
+- Screenshots: none yet (need to hide start overlay / pointer-lock first, then codex-browser screenshot to /tmp).
+- Key verified numbers above (COMPLETED section) are the evidence base for REPORT.md.
+- No screenshots/hashes committed yet.
+
+## DO NOT REPEAT
+- Do NOT accept internal consistency (HUD/labels/transform agreeing) as proof of orientation — must use screen-space projection (ndc signs / projected screen coords).
+- Do NOT reference THREE in codex-browser eval (not a global).
+- Do NOT read/copy code from other projects (clean room).
+- codex-browser eval does NOT await Promises/async — (async()=>{...})() returns {}. Use setInterval step-driver pattern (window.__Tn={step,plan,timer}, advance ~80ms/step, then read window.__Tn.out) to wait between state changes.
+- Camera re-syncs only on the next animation frame after setYaw/setPlayerPosition — always wait >=1 frame before reading __AGENT_STATE__ or firing.
+EOF
+echo written; wc -l ./.agent-state/checkpoint.md" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+written
+      59 ./.agent-state/checkpoint.md
+
+codex
+Checkpoint refreshed at `.agent-state/checkpoint.md` with all required sections. The one blocking item is the aim-ray defect: `crosshairTarget()` returns null even when a zombie torso provably contains the centre ray. Next action is to debug `zombieWorldHitboxes` / `aimRay` / `fire` in `game.js` and dump the hitbox list + ray origin/direction to find the mismatch. Stopping here as instructed.
+tokens used
+422,692
+Checkpoint refreshed at `.agent-state/checkpoint.md` with all required sections. The one blocking item is the aim-ray defect: `crosshairTarget()` returns null even when a zombie torso provably contains the centre ray. Next action is to debug `zombieWorldHitboxes` / `aimRay` / `fire` in `game.js` and dump the hitbox list + ray origin/direction to find the mismatch. Stopping here as instructed.

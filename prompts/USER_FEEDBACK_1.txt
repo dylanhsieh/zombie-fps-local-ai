@@ -1,0 +1,15 @@
+USER PLAYTEST FEEDBACK
+
+"The game is already playable.
+
+However, the mouse X-axis appears to be reversed.
+
+When I move the mouse to the right, the camera/view turns in the opposite horizontal direction.
+
+Please correct the horizontal mouse-look direction so that:
+- moving the mouse right turns the view right;
+- moving the mouse left turns the view left.
+
+Do not change unrelated controls or gameplay unless necessary for this correction."
+
+After making the correction, verify it and finish normally, then update REPORT.md.

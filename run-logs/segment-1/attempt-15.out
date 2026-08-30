@@ -1,0 +1,105 @@
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: high
+reasoning summaries: none
+session id: 01a05192-aec3-7cf0-8bd0-2275007c42d5
+--------
+user
+Continue the current task from where you stopped. Execute the next required step now, and keep working until the task's completion criteria are satisfied, or you reach a genuine blocker you cannot resolve yourself (in which case state it explicitly).
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+exec
+/bin/zsh -lc 'codex-browser eval "
+(function(){
+  var H=window.__THREE_GAME_TEST_HOOKS__;
+  var cam=H.getCamera();
+  var V=cam.position.constructor;
+  var m=cam.matrixWorld;
+  var right=new V(m.elements[0],m.elements[1],m.elements[2]);      // cam local +X in world
+  var fwd=new V(-m.elements[8],-m.elements[9],-m.elements[10]);   // cam local -Z (true forward)
+  var cp=cam.position;
+  // Diagonal points 1 unit forward + 1 unit lateral, in FRONT of camera.
+  var pRight=new V(cp.x+fwd.x+right.x, cp.y+fwd.y+right.y, cp.z+fwd.z+right.z);
+  var pLeft =new V(cp.x+fwd.x-right.x, cp.y+fwd.y-right.y, cp.z+fwd.z-right.z);
+  function proj(p){var n=p.clone().project(cam);return {ndcX:+n.x.toFixed(3),ndcZ:+n.z.toFixed(3),front:n.z<1,screenX:Math.round((n.x*0.5+0.5)*window.innerWidth)};}
+  return {
+    fwdWorld:{x:+fwd.x.toFixed(3),y:+fwd.y.toFixed(3),z:+fwd.z.toFixed(3)},
+    rightWorld:{x:+right.x.toFixed(3),y:+right.y.toFixed(3),z:+right.z.toFixed(3)},
+    diagForwardRight:proj(pRight),
+    diagForwardLeft:proj(pLeft)
+  };
+})()
+" 2>&1' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": {
+    "fwdWorld": {
+      "x": 0,
+      "y": 0,
+      "z": -1
+    },
+    "rightWorld": {
+      "x": 1,
+      "y": 0,
+      "z": 0
+    },
+    "diagForwardRight": {
+      "ndcX": 0.86,
+      "ndcZ": 0.9,
+      "front": true,
+      "screenX": 1191
+    },
+    "diagForwardLeft": {
+      "ndcX": -0.86,
+      "ndcZ": 0.9,
+      "front": true,
+      "screenX": 89
+    }
+  }
+}
+
+codex
+Now it's clean and correct:
+- `fwdWorld` = (0,0,−1) ✓ (true forward)
+- `rightWorld` = (1,0,0) ✓ (camera's screen-right = world +X)
+- Diagonal forward+right → ndc.x = **+0.86** (screen right, screenX 1191) ✓
+- Diagonal forward+left → ndc.x = **−0.86** (screen left, screenX 89) ✓
+
+Combined with the earlier base results (W in front centre, S behind, WA left, WD right), the full 8-direction orientation is now proven from screen-space projection. Let me record the complete orientation table and move to camera-relative movement.
+
+**Orientation proof (spawn, yaw=0, pitch=0, camera fwd world (0,0,−1) = logical +Y):**
+- W (0,1): ndc.z=0.9 <1, ndc.x=0 → **front, centre** ✓
+- S (0,−1): ndc.z=1.101 >1 → **behind** ✓
+- A (−1,0): lateral → camera-right world +X, so −X is screen-left; proven via diagForwardLeft ndc.x=−0.86 → **left** ✓
+- D (1,0): +X is screen-right; proven via diagForwardRight ndc.x=+0.86 → **right** ✓
+- WA (−1,1): ndc.x=−0.86, front → **left-front** ✓
+- WD (1,1): ndc.x=+0.86, front → **right-front** ✓
+- SA (−1,−1): ndc.z=1.101 → **behind** ✓
+- SD (1,−1): ndc.z=1.101 → **behind** ✓
+
+All 8 correct. Now camera-relative movement post-rotation. Let me test yaw=+90° and yaw=−90° with held keys, reading player logical position after a short hold.
+tokens used
+120,009
+Now it's clean and correct:
+- `fwdWorld` = (0,0,−1) ✓ (true forward)
+- `rightWorld` = (1,0,0) ✓ (camera's screen-right = world +X)
+- Diagonal forward+right → ndc.x = **+0.86** (screen right, screenX 1191) ✓
+- Diagonal forward+left → ndc.x = **−0.86** (screen left, screenX 89) ✓
+
+Combined with the earlier base results (W in front centre, S behind, WA left, WD right), the full 8-direction orientation is now proven from screen-space projection. Let me record the complete orientation table and move to camera-relative movement.
+
+**Orientation proof (spawn, yaw=0, pitch=0, camera fwd world (0,0,−1) = logical +Y):**
+- W (0,1): ndc.z=0.9 <1, ndc.x=0 → **front, centre** ✓
+- S (0,−1): ndc.z=1.101 >1 → **behind** ✓
+- A (−1,0): lateral → camera-right world +X, so −X is screen-left; proven via diagForwardLeft ndc.x=−0.86 → **left** ✓
+- D (1,0): +X is screen-right; proven via diagForwardRight ndc.x=+0.86 → **right** ✓
+- WA (−1,1): ndc.x=−0.86, front → **left-front** ✓
+- WD (1,1): ndc.x=+0.86, front → **right-front** ✓
+- SA (−1,−1): ndc.z=1.101 → **behind** ✓
+- SD (1,−1): ndc.z=1.101 → **behind** ✓
+
+All 8 correct. Now camera-relative movement post-rotation. Let me test yaw=+90° and yaw=−90° with held keys, reading player logical position after a short hold.

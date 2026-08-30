@@ -1,0 +1,43 @@
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: high
+reasoning summaries: none
+session id: 01a05192-aec3-7cf0-8bd0-2275007c42d5
+--------
+user
+Continue the current task from where you stopped. Execute the next required step now, and keep working until the task's completion criteria are satisfied, or you reach a genuine blocker you cannot resolve yourself (in which case state it explicitly).
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+exec
+/bin/zsh -lc "cd ~/side-projects/games/web/zombie-fps-local-ai
+# A at yaw +90
+codex-browser eval \"var H=window.__THREE_GAME_TEST_HOOKS__; H.setPlayerPosition(0,0); H.setYaw(Math.PI/2); H.setPitch(0); H.releaseAllKeys(); H.holdKey('KeyA'); 'A held'\" >/dev/null 2>&1
+sleep 0.5
+codex-browser eval \"var s=window.__AGENT_STATE__; JSON.stringify(s.player.logical)\" 2>&1 | grep value
+codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.releaseAllKeys();1\" >/dev/null 2>&1
+# D at yaw +90
+codex-browser eval \"var H=window.__THREE_GAME_TEST_HOOKS__; H.setPlayerPosition(0,0); H.setYaw(Math.PI/2); H.setPitch(0); H.releaseAllKeys(); H.holdKey('KeyD'); 'D held'\" >/dev/null 2>&1
+sleep 0.5
+codex-browser eval \"var s=window.__AGENT_STATE__; JSON.stringify(s.player.logical)\" 2>&1 | grep value
+codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.releaseAllKeys();1\" >/dev/null 2>&1" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1163ms:
+  "value": "{\"x\":0,\"z\":3.299}"
+  "value": "{\"x\":0,\"z\":-3.299}"
+
+codex
+At yaw=+90°:
+- A → logical z=+3.299 (x=0) → **A moves +Z** ✓
+- D → logical z=−3.299 (x=0) → **D moves −Z** ✓
+
+Both match expected. Now yaw=−90° (turned left). Expected: W → −X, A → −Z, D → +Z. Let me verify all three plus pitch-no-vertical.
+tokens used
+121,397
+At yaw=+90°:
+- A → logical z=+3.299 (x=0) → **A moves +Z** ✓
+- D → logical z=−3.299 (x=0) → **D moves −Z** ✓
+
+Both match expected. Now yaw=−90° (turned left). Expected: W → −X, A → −Z, D → +Z. Let me verify all three plus pitch-no-vertical.

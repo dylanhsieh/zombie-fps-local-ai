@@ -1,0 +1,101 @@
+{
+  "codex_version": "codex-cli 0.149.1",
+  "marketplace": "gamedev-robot",
+  "marketplace_path": "~/qa-baseline/external-knowledge/gamedev-marketplace-robot",
+  "excluded_forbidden_generators": [
+    "threejs-3d-generator",
+    "threejs-image-generator",
+    "threejs-audio-generator"
+  ],
+  "local_only_note": "director/graphics credential probe reads env vars only (no network); MISSING keys are an upstream-allowed blocker to proceed fully procedurally; generators not installed.",
+  "skills": [
+    {
+      "skill": "game-engine",
+      "repo": "https://github.com/github/awesome-copilot",
+      "upstream_commit": "f11a4e441c5ff061b4f8ae37952be8c602e4034e",
+      "upstream_path": "skills/game-engine",
+      "license": "MIT",
+      "skill_content_sha256": "72d38d5568aa8cc668928b3be1afd974f134dfdbe14a6231f0666bcb5687fae5",
+      "plugin_manifest_sha256": "7fec60c8dcaee9a567a227d302fcfe25808a99278273a817a0126b19d9ccd061",
+      "installed_plugin_version": "1.0.0",
+      "files": 15
+    },
+    {
+      "skill": "game-developer",
+      "repo": "https://github.com/Jeffallan/claude-skills",
+      "upstream_commit": "882ef55e377dbf9a4dbe496bb41ac6ccd0e555cf",
+      "upstream_path": "skills/game-developer",
+      "license": "MIT",
+      "skill_content_sha256": "0138b2d8042f0c56a740a8b46ffc8e5864879846c7e25ef7317f47237fc56cce",
+      "plugin_manifest_sha256": "a6d912abb9e58a788b318e90a8efcc5ff3efdf290c7a4a6e521b5477b7fcb583",
+      "installed_plugin_version": "1.0.0",
+      "files": 6
+    },
+    {
+      "skill": "threejs-gameplay-systems",
+      "repo": "https://github.com/majidmanzarpour/threejs-game-skills",
+      "upstream_commit": "7221c1f4a6d2ae189a4d85d058d24f3228499d46",
+      "upstream_path": "skills/threejs-gameplay-systems",
+      "license": "MIT",
+      "skill_content_sha256": "58fd0b44cecacde16854c1f83f408734ff742d7ef1a3ce384dd7713b9517d2bb",
+      "plugin_manifest_sha256": "596f2c9ab71bf62f1131f0bd81310362b7d50c82215b70158c0f48ad79b11825",
+      "installed_plugin_version": "1.0.0",
+      "files": 39
+    },
+    {
+      "skill": "threejs-game-ui-designer",
+      "repo": "https://github.com/majidmanzarpour/threejs-game-skills",
+      "upstream_commit": "7221c1f4a6d2ae189a4d85d058d24f3228499d46",
+      "upstream_path": "skills/threejs-game-ui-designer",
+      "license": "MIT",
+      "skill_content_sha256": "fa5ee12eaf7fdc824e85628665c0a2f3e60ec955368629a0c6713b572849a1e5",
+      "plugin_manifest_sha256": "0e99becc040fb9e38ec625f4932699be5ecf1db8ec852cc825f77da66b215bba",
+      "installed_plugin_version": "1.0.0",
+      "files": 8
+    },
+    {
+      "skill": "threejs-aaa-graphics-builder",
+      "repo": "https://github.com/majidmanzarpour/threejs-game-skills",
+      "upstream_commit": "7221c1f4a6d2ae189a4d85d058d24f3228499d46",
+      "upstream_path": "skills/threejs-aaa-graphics-builder",
+      "license": "MIT",
+      "skill_content_sha256": "f764d8ad1bc929e149fb28a12c5a6c27560cd9facd25552a3d80d02a28acf143",
+      "plugin_manifest_sha256": "eb096b6900dd19b50f14df8a76386d35ba045f0d5b3d1358f867e1a3ce76a07f",
+      "installed_plugin_version": "1.0.0",
+      "files": 18
+    },
+    {
+      "skill": "threejs-debug-profiler",
+      "repo": "https://github.com/majidmanzarpour/threejs-game-skills",
+      "upstream_commit": "7221c1f4a6d2ae189a4d85d058d24f3228499d46",
+      "upstream_path": "skills/threejs-debug-profiler",
+      "license": "MIT",
+      "skill_content_sha256": "ff2a086a21191a2d3a56c4736361d66383dd542447b421e354858842428535e0",
+      "plugin_manifest_sha256": "c2b95090b48bfab877405747abc605c5d63dd1ce1569bc8664d725b2da35a783",
+      "installed_plugin_version": "1.0.0",
+      "files": 7
+    },
+    {
+      "skill": "threejs-qa-release",
+      "repo": "https://github.com/majidmanzarpour/threejs-game-skills",
+      "upstream_commit": "7221c1f4a6d2ae189a4d85d058d24f3228499d46",
+      "upstream_path": "skills/threejs-qa-release",
+      "license": "MIT",
+      "skill_content_sha256": "8f2116a79436939f5543d36c094d7e699c48201bb18b35fc7f7efbd8c06959ee",
+      "plugin_manifest_sha256": "53c457cd9d46a65e586fee09f2d43a00bea527983541be2ee94cc8a0fc79e0b0",
+      "installed_plugin_version": "1.0.0",
+      "files": 12
+    },
+    {
+      "skill": "threejs-game-director",
+      "repo": "https://github.com/majidmanzarpour/threejs-game-skills",
+      "upstream_commit": "7221c1f4a6d2ae189a4d85d058d24f3228499d46",
+      "upstream_path": "skills/threejs-game-director",
+      "license": "MIT",
+      "skill_content_sha256": "7890f63d936c9490063631416377360f96acc9f71068762abd471d4f0c10e5b2",
+      "plugin_manifest_sha256": "d0f8d765c70143f2863823fb2044e9f7c463463577cf3e0c8912b9312c1aab5c",
+      "installed_plugin_version": "1.0.0",
+      "files": 6
+    }
+  ]
+}

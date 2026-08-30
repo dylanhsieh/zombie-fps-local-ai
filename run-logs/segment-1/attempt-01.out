@@ -1,0 +1,2002 @@
+Reading additional input from stdin...
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a05133-f728-7d12-a99c-c0497b0dedc1
+--------
+user
+Before substantive implementation, inspect the installed Skills relevant to this task, read their SKILL.md content, and apply their methods where materially useful.
+
+Priority for this run:
+  1. threejs-qa-release       — deterministic test hooks (__THREE_GAME_TEST_HOOKS__ / __AGENT_STATE__ convention),
+                                automated playtest. Read references/playtest-bot.md. This is how you PROVE things.
+  2. threejs-debug-profiler   — first-person camera/input debugging, transforms, pointer behaviour.
+                                Read references/debug-profile-checklists.md and references/checklists/scene-debugging.md.
+  3. threejs-gameplay-systems — FPS controls, camera-relative movement, raycast/hit detection, update order,
+                                game feel. Read references/gameplay-workflows.md.
+  4. threejs-game-ui-designer — centre crosshair and floating health-bar UI.
+  5. threejs-aaa-graphics-builder — readable block-built visuals, lighting/material variation.
+  6. game-engine / game-developer — general 3D web game techniques (references/3d-web-games.md).
+Use threejs-game-director only if it materially helps. Do not force irrelevant Skills.
+
+Then read GAME_GOAL.md and AGENTS.md in this folder and build what GAME_GOAL.md specifies.
+
+This folder is served at THE_URL_BELOW — put your entry HTML at index.html and open that URL to test.
+Three.js is vendored locally at ./three.module.js (no CDN needed, no external assets).
+
+=== THE SINGLE MOST IMPORTANT THING ===
+A PREVIOUS BUILD WAS MATHEMATICALLY SELF-CONSISTENT AND STILL WRONG. Its player transform, its HUD, and its
+ground-tile labels all agreed with each other perfectly — and on screen, front/back were reversed and
+left/right were reversed. The human player experienced it as backwards.
+
+So: INTERNAL CONSISTENCY IS NOT EVIDENCE OF CORRECTNESS. Three internal sources agreeing proves nothing about
+what the player sees. You must prove orientation from SCREEN-SPACE PROJECTION.
+
+At spawn the player is at logical (0,0) looking toward logical +Y:
+   W -> (0,1) must be VISIBLY IN FRONT      S -> (0,-1) behind
+   A -> (-1,0) must be VISIBLY ON THE LEFT  D -> (1,0) visibly on the RIGHT
+   W+A (-1,1)   W+D (1,1)   S+A (-1,-1)   S+D (1,-1)
+
+You must prove the visible directions are correct, and it is your responsibility to choose how. Whatever
+method you pick, it must reflect what actually appears on screen rather than internal numbers agreeing with
+each other. If the directions come out swapped, the build is reversed no matter what your HUD says.
+
+=== CAMERA-RELATIVE MOVEMENT (this is a real FPS) ===
+After the player turns with the mouse: W = camera facing projected onto the ground; S = opposite;
+A = strafe screen-LEFT; D = strafe screen-RIGHT. Looking up/down must not move the player vertically.
+Verify at initial facing, after ~90 deg right, and after ~90 deg left. Reversed A/D or W/S is BLOCKING.
+
+=== CROSSHAIR-TO-HIT (BLOCKING) ===
+Crosshair at the EXACT viewport centre. What the crosshair covers must be what the shot hits. Derive the
+authoritative aim ray from the camera centre, NOT from a decorative gun barrel (the muzzle may be visually
+offset; hit detection must follow the crosshair). Build an aiming calibration target and prove the ray and the
+crosshair agree. Also prove a near-miss: aim just beside a zombie -> no hit registered.
+
+=== THE GAME ===
+One large indoor room, block-built floor, player near one end, exactly TWO zombies on the far side, both
+visible soon after spawn. First person: mouse look + pointer lock, camera-relative WASD, centre crosshair,
+block-built fake arms + machine gun, infinite ammo, rapid fire while held.
+Zombie A stands still. Zombie B walks slowly toward the player. Both: block-built humanoid silhouette, health
+bar above the head, exactly 5 HP — each valid hit removes 1, dies on the 5th (not 4th, not 6th), readable hit
+feedback, obvious death feedback, dead zombie stops being a live target.
+Visuals: multiple blocks per body, decent silhouettes, lighting/material variation — better than bare cubes.
+
+=== TEST HOOKS ===
+Expose window.__AGENT_STATE__ with: player logical+world position, camera yaw, camera forward vector,
+crosshair target, last shot hit/miss + target id, both zombies' health/positions, ready. Plus a deterministic
+fire() and a way to set yaw/position for testing. Keep hooks working even when debug visuals are hidden.
+
+=== SUGGESTED ORDER ===
+room + first-person camera -> correct initial facing -> verify initial WASD by screen projection ->
+camera-relative movement -> verify after rotation -> centre crosshair -> centre-view ray -> calibration target
+and prove crosshair/ray agreement -> hands + gun -> two zombies -> health bars -> 5-hit death ->
+Zombie B slow approach -> visual polish -> full runtime verification.
+
+=== VERIFICATION STANDARD ===
+BUILD PASS is not GAMEPLAY VERIFIED. PAGE LOADS is not FPS VERIFIED. RAYCAST EXISTS is not CROSSHAIR ALIGNMENT
+VERIFIED. Use codex-browser (`codex-browser help`) to open the page, read state, eval expressions, send keys,
+and screenshot. Separate mechanically verified / visually inspected / human-only (real pointer-lock feel).
+
+=== STOP CONDITION ===
+When the game genuinely works — correct human-visible movement, camera-relative movement, centre crosshair,
+crosshair-to-hit alignment, machine gun, infinite ammo, two zombies (one stationary, one approaching), health
+bars, exactly five hits to kill, runtime verified, no fatal page errors — write REPORT.md with your evidence
+(including the screen-projection proof and the 5-hit sequences) and stop. Do not stop after scaffolding.
+
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+warning: Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+exec
+/bin/zsh -lc 'ls -la ~/side-projects/games/web/zombie-fps-local-ai && cat ~/side-projects/games/web/zombie-fps-local-ai/GAME_GOAL.md 2>/dev/null | head -100' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+total 2536
+drwxr-xr-x  10 user  staff      320 Aug 30 13:45 .
+drwxr-xr-x  35 user  staff     1120 Aug 30 13:41 ..
+drwxr-xr-x   2 user  staff       64 Aug 30 13:45 .agent-state
+drwxr-xr-x  10 user  staff      320 Aug 30 13:45 .git
+-rw-r--r--   1 user  staff      127 Aug 30 13:45 agent-status.json
+-rw-r--r--   1 user  staff     2142 Aug 30 13:42 AGENTS.md
+-rw-r--r--   1 user  staff     5529 Aug 30 13:43 GAME_GOAL.md
+drwxr-xr-x   6 user  staff      192 Aug 30 13:45 sup-log
+-rw-r--r--   1 user  staff     5650 Aug 30 13:43 TASK_PROMPT.txt
+-rw-r--r--   1 user  staff  1272972 Aug 30 13:41 three.module.js
+# GAME GOAL — Browser 3D zombie FPS prototype
+
+Browser-based first-person shooter using Three.js / WebGL / HTML-CSS-JS. Block-built visuals, no external
+3D assets. Built clean-room in this folder.
+
+---
+
+## ⚠ RULE ZERO — PLAYER-VISIBLE DIRECTION IS THE AUTHORITY
+
+A previous build was **mathematically self-consistent and still wrong**: every internal number agreed with
+every other internal number, yet on screen front/back were reversed and left/right were reversed.
+
+**Internal consistency is NOT evidence of correctness.** If the coordinate arithmetic is self-consistent but
+the tile labelled `(0,1)` is not literally *in front of* the player on screen, the build is WRONG.
+
+You must prove direction from **what appears on screen**, not from vector signs agreeing with each other.
+
+### Authoritative spawn orientation
+Player spawns at logical `(0,0)` **looking toward logical +Y**.
+
+```
+                    W / +Y
+                      ↑
+                      |
+             A / -X  ← ● →  D / +X
+                      |
+                      ↓
+                    S / -Y
+```
+Before the player turns the camera:
+
+| Key | Logical result | Must appear on screen as |
+|---|---|---|
+| W | `(0, 1)` | tile moves toward / is **in front** |
+| S | `(0,-1)` | **behind** |
+| A | `(-1,0)` | player's **LEFT** |
+| D | `(1, 0)` | player's **RIGHT** |
+| W+A | `(-1, 1)` | forward-left |
+| W+D | `(1, 1)` | forward-right |
+| S+A | `(-1,-1)` | back-left |
+| S+D | `(1,-1)` | back-right |
+
+**The tile marked `(0,1)` must literally be IN FRONT of the player at spawn. `(-1,0)` on the LEFT.
+`(1,0)` on the RIGHT.** Pick whatever Three.js world-axis mapping is convenient — the *visible* mapping above
+is what counts.
+
+Do NOT accept "all internal sources agree with each other" as proof of orientation. That test passed last time
+and the result was still reversed on screen. It is your responsibility to decide how to prove the visible
+directions are correct.
+
+---
+
+## Camera-relative movement (this is a real FPS, unlike the previous calibration test)
+
+After the player turns with the mouse:
+- **W** = the direction the camera faces, projected onto the ground plane
+- **S** = opposite
+- **A** = strafe to the player's **screen-left**
+- **D** = strafe to the player's **screen-right**
+
+Looking up/down must **not** move the player vertically — use yaw / horizontal forward projection.
+
+Required checks: facing initial +Y → W goes visually forward. Turn ~90° right → W now moves toward the new
+facing. Turn ~90° left → same. **A always strafes screen-left, D always screen-right.**
+**Reversed A/D or W/S is a BLOCKING defect.**
+
+---
+
+## Room
+One large indoor room. Simple tiled/block-built floor. Player starts near one end; both zombies on the far
+side, visible shortly after spawn. A coordinate/debug floor may be retained during development — if used, it
+must match the visible orientation above.
+
+## Player
+First-person. Mouse look + pointer lock where appropriate. Camera-relative WASD. Visible **centre crosshair**.
+Visible block-built fake first-person arms and a machine gun. **Infinite ammo.** Rapid/automatic fire while the
+button is held is fine.
+
+## ⚠ CROSSHAIR — BLOCKING REQUIREMENT
+The crosshair must sit at the **exact centre of the rendered viewport**, and the player must be able to trust:
+
+> **what the crosshair covers == what the shot hits**
+
+The authoritative aim ray must originate from the camera / centre of view, or otherwise be mathematically
+guaranteed to correspond to the centre crosshair. A decorative gun barrel may be visually offset, but
+**hit detection must follow the crosshair, not the barrel.**
+
+If the crosshair visually covers a zombie with clear line of sight, the shot **must** register on it.
+Do not report complete if this is wrong.
+
+## Zombies — exactly two
+- **Zombie A** — stationary, never approaches.
+- **Zombie B** — walks slowly toward the player (slow enough to aim at comfortably).
+
+Both: block-built humanoid silhouette, clearly distinct from the environment, **health bar floating above the
+head**, exactly **5 HP = 5 successful hits**. Each valid hit removes exactly 1. Dies on the **5th** hit — not
+the 4th, not the 6th. Readable hit feedback; obvious death feedback; a dead zombie is no longer a live target.
+
+## Visual style
+Block/cuboid construction is fine, but not one crude cube per thing — multiple blocks per body, decent
+
+exec
+/bin/zsh -lc 'tail -40 ~/side-projects/games/web/zombie-fps-local-ai/GAME_GOAL.md; echo ---; cat ~/side-projects/games/web/zombie-fps-local-ai/agent-status.json; echo ---; ls ~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot; echo ---; codex-browser help 2>&1 | head -40' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+button is held is fine.
+
+## ⚠ CROSSHAIR — BLOCKING REQUIREMENT
+The crosshair must sit at the **exact centre of the rendered viewport**, and the player must be able to trust:
+
+> **what the crosshair covers == what the shot hits**
+
+The authoritative aim ray must originate from the camera / centre of view, or otherwise be mathematically
+guaranteed to correspond to the centre crosshair. A decorative gun barrel may be visually offset, but
+**hit detection must follow the crosshair, not the barrel.**
+
+If the crosshair visually covers a zombie with clear line of sight, the shot **must** register on it.
+Do not report complete if this is wrong.
+
+## Zombies — exactly two
+- **Zombie A** — stationary, never approaches.
+- **Zombie B** — walks slowly toward the player (slow enough to aim at comfortably).
+
+Both: block-built humanoid silhouette, clearly distinct from the environment, **health bar floating above the
+head**, exactly **5 HP = 5 successful hits**. Each valid hit removes exactly 1. Dies on the **5th** hit — not
+the 4th, not the 6th. Readable hit feedback; obvious death feedback; a dead zombie is no longer a live target.
+
+## Visual style
+Block/cuboid construction is fine, but not one crude cube per thing — multiple blocks per body, decent
+silhouettes, lighting and material variation. Somewhat more refined than bare Minecraft-level geometry.
+
+## Test hooks (keep available even when debug visuals are hidden)
+Expose deterministic hooks, e.g. `window.__AGENT_STATE__` returning: player logical + world position, camera
+yaw, camera forward vector, crosshair target, last shot hit/miss + target id, both zombies' health and
+positions, `ready`. Plus a deterministic `fire()` and a way to set yaw/position for testing.
+
+## Verification standard
+`BUILD PASS` ≠ `GAMEPLAY VERIFIED`. `PAGE LOADS` ≠ `FPS VERIFIED`. `RAYCAST EXISTS` ≠ `CROSSHAIR ALIGNMENT
+VERIFIED`. Distinguish honestly between **mechanically verified**, **visually inspected**, and **human-only**
+(e.g. real pointer-lock feel). Prove things with hooks/automation where practical.
+
+## Deliverable
+`REPORT.md` with: what was implemented, movement evidence (initial + after rotation, including the
+screen-projection proof), crosshair-alignment evidence, per-zombie 5-hit evidence, health-bar verification,
+runtime verification, controls, what still needs human playtest, and known defects.
+---
+{
+  "state": "ACTIVE_TOOL_WORK",
+  "attempt": 1,
+  "thread": 1,
+  "resume_count": 0,
+  "phase": "initial",
+  "elapsed_s": 0.0
+}---
+game-developer
+game-engine
+threejs-aaa-graphics-builder
+threejs-debug-profiler
+threejs-game-director
+threejs-game-ui-designer
+threejs-gameplay-systems
+threejs-qa-release
+---
+codex-browser — drive the sandbox-external browser. Output is bounded (large results saved to disk).
+COMMANDS
+  open <url>              load a page (e.g. open http://127.0.0.1:PORT/)
+  url | title             current url / page title
+  state                   compact JSON from the app's diagnostics hook (window.__AGENT_STATE__)
+  eval <js...>            run a JS expression in the page → bounded JSON   (e.g. eval document.title)
+  get <path>              read window.<path>; dots ok  (e.g. get __AGENT_STATE__.player.x)
+  click-id <id>           click #<id>       |  click <sel>   |  type <sel> <text>
+  key <k> | press <k>     one key press (e.g. key f)         |  hold <k> <ms>  (held movement)
+  screenshot [file]       save PNG to file; prints path + sha256 + bytes
+  snapshot                a11y + visible text + controls (bounded)
+  console | errors | network-errors     recent page logs (bounded)
+  reload | close | health
+TELEMETRY: in your app expose  window.__AGENT_STATE__  (an object, or a function returning compact
+JSON), then read it with `codex-browser state`. No obscure endpoints needed.
+
+  → Read relevant Skills' SKILL.md + references
+  • Scaffold index.html + game (room, camera, WASD)
+  • Crosshair + centre-view aim ray + calibration target
+  • Zombies, health bars, 5-hit death, hit feedback
+  • Test hooks (__AGENT_STATE__, fire, setYaw/setPos)
+  • Browser verification: screen-projection proof, camera-relative, crosshair, 5-hit
+  • Polish visuals + write REPORT.md
+exec
+/bin/zsh -lc 'R=~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot; wc -l $R/threejs-qa-release/1.0.0/skills/threejs-qa-release/SKILL.md $R/threejs-qa-release/1.0.0/skills/threejs-qa-release/references/playtest-bot.md 2>/dev/null; ls $R/threejs-qa-release/1.0.0/skills/threejs-qa-release/references/ 2>/dev/null' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+      61 ~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot/threejs-qa-release/1.0.0/skills/threejs-qa-release/SKILL.md
+      44 ~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot/threejs-qa-release/1.0.0/skills/threejs-qa-release/references/playtest-bot.md
+     105 total
+checklists
+playtest-bot.md
+prompt-templates.md
+qa-release-checklists.md
+visual-test-harness.md
+
+exec
+/bin/zsh -lc 'R=~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot; cat $R/threejs-qa-release/1.0.0/skills/threejs-qa-release/SKILL.md $R/threejs-qa-release/1.0.0/skills/threejs-qa-release/references/playtest-bot.md' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+---
+name: threejs-qa-release
+description: "Verify and release Three.js browser games. Combines playtest QA, automated bot playtests, mobile/responsive checks, production builds, preview verification, static-hosting base paths, debug gating, bundle review, screenshots, visual test harness decisions, packaged canvas-pixel inspection with measured metrics, console checks, and release risk reports."
+---
+
+# Three.js QA Release
+
+## Purpose
+
+Prove the game works as a player encounters it, then prepare a shippable browser build with known risks.
+
+## QA Workflow
+
+Load `references/qa-release-checklists.md` as the first action before broad QA, mobile verification, bug reporting, production preview, static-hosting checks, or release preparation. Track it in a reference ledger with yes/no, path, and failure reason. Do not mark QA/release complete while this reference is skipped for QA or release work.
+
+Load `references/checklists/visual-verification.md` for screenshot/canvas verification, `references/checklists/playtest-qa.md` for player-loop QA, and `references/checklists/release.md` for production release checks. Load `references/prompt-templates.md` only when the user asks for reusable QA/release prompts or a task template.
+
+Load `references/visual-test-harness.md` and `references/checklists/visual-test-harness.md` when the game warrants screenshot baselines, visual regression testing, release-ready visual evidence, UI/generated-asset regression protection, or premium visual QA. If a harness is not warranted, report the skip reason.
+
+Load `references/playtest-bot.md` and `references/checklists/bot-playtest.md` for release-ready gameplay claims, difficulty/fairness verification, or when the playable loop has never been driven by scripted input. Report the bot playtest decision as added/extended/skipped with reason.
+
+1. Install dependencies if needed.
+2. Run build/typecheck.
+3. Start dev or preview server.
+4. Open browser target.
+5. Capture console/page/network errors.
+6. Verify nonblank canvas pixels.
+7. Capture desktop and mobile screenshots.
+8. Trigger main input, objective progression, fail/retry, and recent risky paths.
+9. Check HUD text fit, safe areas, touch targets, responsive layout.
+10. Decide whether to add or extend a visual test harness. For premium/release UI or generated-asset work, prefer a harness unless determinism is a real blocker.
+10b. Decide whether to run the bot playtest (`tests/bot-playtest.template.ts` in scaffold games). For release-ready gameplay claims, run it and report the metrics JSON.
+11. If audio changed, verify user-gesture unlock, SFX triggers, ambience loop start/stop, pause/restart cleanup, mute/volume behavior, and decode/load errors.
+12. Record artifacts and issues.
+
+## Packaged Canvas Inspector
+
+Use the bundled inspector when the target project does not already include one:
+
+```bash
+node <this-skill-dir>/scripts/inspect-threejs-canvas.mjs --url http://127.0.0.1:5188
+```
+
+For mobile emulation, add `--mobile`. Add `--state <name>` (and optionally `--seed <n>`) to drive the game's `__THREE_GAME_TEST_HOOKS__` before capture, so every named state (active-play, fail, stress) can be measured deterministically without live play — outputs are suffixed per state. Generated games from the packaged scaffold also include their own `scripts/inspect-threejs-canvas.mjs` and `npm run inspect:canvas`.
+
+The inspector JSON includes a `metrics` block (color entropy, edge density, luminance contrast, dominant-color share) and a `renderBudget` comparison against starting-point tier budgets. Cite these as the Measured Evidence in the visual scorecard (`threejs-aaa-graphics-builder/references/visual-scorecard.md`); over-budget rows need a documented tradeoff, and blank-canvas or error conditions still exit nonzero.
+
+## Release Workflow
+
+1. Inspect package scripts, Vite config, base path, public/assets.
+2. Gate debug UI/logging/test helpers.
+3. Run production build and preview/static server.
+4. Verify built output desktop/mobile.
+5. Review bundle and large assets.
+6. Document deploy command, host assumptions, and residual risks.
+
+## Final Response
+
+Lead with pass/fail. Include the reference ledger, QA matrix/checklist result, commands, URL, controls, screenshots/artifacts, issues found/fixed, deployment notes, and risks.
+When visual baselines are in scope, include the harness decision, states covered, update/compare commands, artifact paths, thresholds/masks, and flake risks.
+When the bot playtest ran, include its metrics JSON (frames, score progression, distance, softlock windows, seed) and the added/extended/skipped decision.
+# Bot Playtest
+
+Automated playtests drive the game through scripted real input and measure whether it actually plays: objective progression, player responsiveness, softlock windows, and error-free runtime. A game that renders beautifully but cannot be progressed by a scripted sweep is not release-ready. Use this for release-ready gameplay claims and difficulty/fairness verification; the canvas inspector proves the game renders, the bot proves it plays.
+
+## Prerequisites
+
+- `window.__THREE_GAME_DIAGNOSTICS__` publishing frame, score/objective, complete/fail state, and player position every update.
+- `window.__THREE_GAME_TEST_HOOKS__` with at least `seed()` and `setState()` so runs are reproducible (scaffold games ship both).
+- All gameplay randomness routed through the seeded RNG — otherwise bot metrics are noise.
+
+## Setup
+
+Copy the packaged template and adapt it:
+
+```bash
+cp tests/bot-playtest.template.ts tests/bot-playtest.spec.ts
+npx playwright test tests/bot-playtest.spec.ts
+```
+
+Adapt `INPUT_SCRIPT` to the game's controls and level layout: an endless runner bot holds forward and switches lanes on a cadence; an arena game sweeps the play space; a tower defense bot places affordable towers via test hooks and starts waves. Game-specific hooks (e.g. `forceWave()`, `buildFirstOpenPad()`) are encouraged for genres where raw keyboard input cannot express the core verb.
+
+## Metrics And What They Mean
+
+- `framesAdvanced` — the loop survived the whole run; a stall here is a crash or frozen loop.
+- `distanceTravelled` — input responsiveness; near-zero under held keys means broken input mapping.
+- `scoreAfter - scoreBefore` and `stepOfFirstScore` — objective progression and how quickly a naive player finds it. If a scripted sweep never scores, the objective is unreachable, unreadable, or broken.
+- `softlockWindows` — sampling windows where frames advanced but held input produced neither motion nor progress. Repeated windows indicate stuck-on-geometry, dead input states, or unrecovered fail states.
+- Time-to-first-fail (games with fail states) — add a scripted "reckless" run that seeks hazards and assert the fail state triggers and the retry path restores play; a game that cannot be failed has no pressure, and a fail state that cannot be retried is a release blocker.
+- Console/page errors — must be empty for the full run.
+
+## Headless WebGL Caveats
+
+- Always launch Chromium with `channel: 'chromium'` (the scaffold config and `inspect-threejs-canvas.mjs` do). Playwright's default headless is `chromium_headless_shell`, which ships no GPU backend and silently falls back to SwiftShader (CPU). This is a launch-config bug, not a headless limitation: on the same 1024x1024 scene the shell reports `ANGLE (Google, ... SwiftShader driver)` and renders at 32 fps, while `channel: 'chromium'` reports `ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Pro)` and renders at 127 fps — ~4x, from one line of config.
+- Verify the GPU before reporting any FPS; never assume it. `inspect-threejs-canvas.mjs` records a `gpu` block (`renderer`, `vendor`, `softwareRendered`) in its JSON report — check it. If `softwareRendered` is true, the run fell back to CPU and its FPS/frame-time numbers are not performance evidence; pixel, budget, and functional checks are still valid. Fix the fallback with `npx playwright install chromium` rather than caveating the number.
+- Run Playwright suites with `workers: 1` for WebGL games (the scaffold config does). Parallel contexts still contend for the GPU, and the frame-time collapse makes game time drift from wall time, flaking timed phases and screenshot baselines.
+- Headless FPS on a verified real GPU is still not a phone. Treat it as a desktop-GPU signal and validate mobile targets on real hardware.
+
+## Difficulty And Fairness Signals
+
+For games with fail states, run the bot at two skill levels (e.g. reaction delay 0ms vs 300ms between script steps) and compare survival time and score. If the delayed bot survives as long as the fast one, difficulty pressure is decorative; if even the fast script cannot survive the first threat, the opening is unfair. Report both runs when difficulty tuning is in scope.
+
+## Reporting
+
+Include in the QA evidence: the JSON report attachment (steps, frames, score progression, distance, softlock windows, errors), the seed used, and pass/fail per assertion. Report the bot playtest decision like the visual harness decision: added / extended / skipped with reason.
+
+exec
+/bin/zsh -lc 'R=~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot; cat $R/threejs-debug-profiler/1.0.0/skills/threejs-debug-profiler/SKILL.md; ls $R/threejs-debug-profiler/1.0.0/skills/threejs-debug-profiler/references/ 2>/dev/null; ls $R/threejs-debug-profiler/1.0.0/skills/threejs-debug-profiler/references/checklists 2>/dev/null' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+---
+name: threejs-debug-profiler
+description: "Debug and profile Three.js browser games. Combines scene debugging, render/runtime/loading/animation/resize/mobile input fixes, performance profiling, draw calls, triangles, textures, memory, shader/post-processing cost, bundle size, and mobile DPR/input issues."
+---
+
+# Three.js Debug Profiler
+
+## Purpose
+
+Find root causes and optimize measured bottlenecks without breaking playability.
+
+## Debug Workflow
+
+Load `references/debug-profile-checklists.md` as the first action when debugging render/runtime/mobile issues, asset loading, audio loading/playback, animation, resize, input, blank canvas, physics/collision bugs, or profiling performance. Track it in a reference ledger with yes/no, path, and failure reason. Do not mark the debug/profile phase complete while this reference is skipped for debug or profiling work.
+
+Load `references/checklists/scene-debugging.md` for render/runtime bug diagnosis, `references/checklists/performance-profile.md` for profiling work, and `references/checklists/mobile-input.md` for mobile render/input issues. Load `references/prompt-templates.md` only when the user asks for reusable debug/profile prompts or a task template.
+
+1. Reproduce locally.
+2. Read console/page/network errors.
+3. Check canvas display size and drawing-buffer size.
+4. Check renderer/context/loop ownership.
+5. Check camera, aspect, near/far, lights, materials, fog, scene contents, transforms.
+6. Check asset paths/loaders/CORS/base path.
+7. Check animation delta units, physics/update order, fixed timestep, collider/body ownership, input listeners, pointer/touch behavior, resize, and audio context unlock/decode errors when audio is involved.
+8. Fix root cause in owning module.
+9. Verify browser screenshot, nonblank canvas, console/page errors, and broken path.
+
+## Performance Workflow
+
+1. Reproduce in correct build mode.
+2. Record baseline: FPS/frame time, draw calls, triangles, geometries, textures, memory, bundle.
+3. Identify CPU/GPU/memory/network bottleneck.
+4. Optimize one thing at a time: instancing, shared resources, culling, LOD, DPR cap, cheaper shadows/post, texture discipline.
+5. Re-measure same scenario and verify visuals/playability.
+
+## Final Response
+
+Lead with root cause or bottleneck. Report the reference ledger, checklist items used, files changed, baseline/post metrics, commands, screenshots/artifacts, broken paths retested, and residual risks.
+checklists
+debug-profile-checklists.md
+prompt-templates.md
+mobile-input.md
+performance-profile.md
+scene-debugging.md
+
+exec
+/bin/zsh -lc 'R=~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot; cat $R/threejs-debug-profiler/1.0.0/skills/threejs-debug-profiler/references/checklists/scene-debugging.md $R/threejs-debug-profiler/1.0.0/skills/threejs-debug-profiler/references/debug-profile-checklists.md 2>/dev/null | head -120' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+# Scene Debugging Checklist
+
+- Reproduce the issue locally before editing.
+- Read the first console error and page error before changing code.
+- Confirm the render loop starts once and continues.
+- Confirm the renderer is attached to the expected canvas.
+- Check canvas CSS size, drawing-buffer size, and device pixel ratio.
+- Check camera position, target, aspect, projection update, near plane, and far plane.
+- Check scene contains visible objects in front of the camera.
+- Check lights, material side, opacity, depth settings, and color management.
+- Check asset URLs, public paths, async load ordering, CORS, and failed network requests.
+- Check animation mixer delta units and fixed-step simulation ordering.
+- Check collision layers/radii/scale if gameplay appears broken.
+- Verify the fix with screenshot, pixel sample, and interaction.
+# Debug And Profile Checklists
+
+Use this for blank canvases, bad framing, runtime errors, asset/audio loading issues, animation/collision/input failures, mobile bugs, and performance optimization.
+
+## Triage Order
+
+1. Reproduce locally with the same command and URL the user used when possible.
+2. Capture console, page, and network errors.
+3. Confirm the app is serving the expected build, not another local server on the same port.
+4. Identify the owner: renderer, scene, camera, loop, assets, audio, input, physics, UI, CSS, build/base path, or performance.
+5. Fix the root cause in the owning module.
+6. Retest the exact broken path.
+
+## Blank Or Bad Canvas
+
+Check in this order:
+
+- Canvas exists in the DOM.
+- Canvas CSS size is nonzero and visible.
+- Drawing buffer size is nonzero and matches expected DPR behavior.
+- WebGL context creation succeeded.
+- Renderer is rendering inside exactly one active loop.
+- Camera has correct aspect, projection matrix, near/far, and points at visible content.
+- Scene has visible objects at expected transforms and scale.
+- Materials are visible: opacity, transparent, side, depth, color space, fog interaction.
+- Lights exist when lit materials need them.
+- Background/fog is not matching object color.
+- Resize updates renderer, camera, composer, and CSS.
+- CSS overlays are not covering the canvas.
+- Render target/composer output is displayed.
+
+## Asset Loading
+
+Check:
+
+- URLs and Vite base path.
+- Files in `public/` or imported asset paths.
+- Loader type and `three/addons/...` imports.
+- CORS and MIME type errors.
+- glTF external buffers/textures.
+- Texture color space and flipY where relevant.
+- Async load state, loading UI, error fallback, and retry behavior.
+- Disposal of replaced assets.
+
+For generated/imported GLB assets, also check file size, URL casing, Vite public/import path, Draco/Meshopt requirements, scene scale, pivot/origin, bounds, texture dimensions, material count, animation clip names, and whether generated download URLs were saved before expiring.
+
+## Audio Loading And Playback
+
+Check:
+
+- Audio files exist at runtime URLs and have compatible MIME types.
+- `AudioContext` is resumed from a user gesture before playback.
+- Decode/load promises reject visibly instead of failing silently.
+- SFX triggers are event-driven and not firing every frame.
+- Ambience/music loops stop on pause, restart, and scene teardown.
+- Mute/volume state controls every group.
+- Page visibility pause/resume does not stack duplicate sources.
+- Mobile browser unlock behavior is tested when mobile is in scope.
+
+## Animation, Loop, And Physics
+
+Check:
+
+- Delta time units in seconds vs milliseconds.
+- Delta clamping for tab sleep and frame spikes.
+- Fixed-step physics accumulator if physics is timing-sensitive.
+- Physics engine initialized before creating bodies or stepping.
+- Physics world owns body/collider creation and disposal.
+- Physics timestep is stable and not tied directly to variable render delta.
+- Animation mixer updates and clip actions.
+- Multiple requestAnimationFrame loops.
+- State transitions that stop updates or restart timers.
+- Collision proxies vs visual meshes.
+- Collider scale, rotation, and offset match the visual expectation.
+- High-speed tunneling and spawn overlap.
+- CCD enabled only for high-speed bodies that need it.
+- Sensors/triggers have active events or explicit overlap checks.
+- Kinematic moving platforms update physics bodies, not only visual meshes.
+- Restart cleanup for entities, listeners, timers, effects, and physics bodies.
+- Imported model animation mixer exists, clips are bound to the correct root, root motion is intentional, and clip actions are stopped/cleaned up on restart.
+
+## Input And Mobile Bugs
+
+Check:
+
+- Keyboard focus and prevented default only where needed.
+- Pointer listeners attached to the correct element.
+- Pointer capture and release/cancel behavior.
+- `touch-action` CSS and viewport meta.
+- Page scroll stealing gestures.
+- Device pixel ratio causing tiny controls or high GPU cost.
+- Safe-area insets.
+- Orientation/resize after rotation.
+- Desktop input still works after mobile controls are added.
+- UI controls emit game intents and do not directly duplicate simulation rules.
+
+## Performance Profiling Order
+
+Measure in production preview when user-facing performance matters.
+
+1. Establish scenario: viewport, DPR, route, gameplay state, camera view, mobile/desktop.
+2. Baseline:
+   - FPS/frame time.
+   - Renderer calls.
+   - Triangles.
+   - Geometries.
+
+exec
+/bin/zsh -lc 'R=~/qa-baseline/external-knowledge/camedev-robot 2>/dev/null; R=~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot; cat $R/threejs-gameplay-systems/1.0.0/skills/threejs-gameplay-systems/SKILL.md; ls $R/threejs-gameplay-systems/1.0.0/skills/threejs-gameplay-systems/references/ 2>/dev/null' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+---
+name: threejs-gameplay-systems
+description: "Build and iterate playable Three.js game systems. Combines starter scaffold creation, architecture, game design, level design, gameplay implementation, combat/encounter design, and game-feel tuning (hitstop, screenshake, easing, impact feedback). Use for first playable slices, new Vite/TypeScript/Three.js game setup, design briefs, core loops, level/arena/track/wave/hole/puzzle design, game loops, entity systems, input, collision/physics, scoring, objectives, audio hooks, camera, controls, difficulty, feedback, juice, and maintainable structure."
+---
+
+# Three.js Gameplay Systems
+
+## Purpose
+
+Create or evolve a playable browser game loop with clear ownership, responsive controls, deterministic update order, strong design intent, playable spaces, and verified player-facing behavior.
+
+## Use When
+
+Starting a new game, repairing a weak prototype, adding mechanics/entities, designing architecture, defining a game design brief, planning levels/arenas/tracks/waves/holes/puzzles, tuning camera/controls, implementing rules/objectives, building encounters, or improving game feel.
+
+## Workflow
+
+Load `references/gameplay-workflows.md` as the first action when the task includes first playable setup, architecture, mechanics, entities, input, camera, collision/physics, scoring, objectives, feedback, or feel tuning.
+
+Load `references/game-design-level-design.md` before broad new-game creation, major gameplay changes, level/arena/track/wave/hole/puzzle design, combat/encounter design, progression/difficulty work, or any claim that gameplay is premium, polished, complete, or less generic.
+
+Load `references/physics-engine-selection.md` before adding or changing physics, collision-heavy gameplay, vehicle movement, rolling balls, mini-golf, pool/snooker, pinball, rigid-body puzzles, character controllers, sensors, high-speed projectiles, moving platforms, or physics QA.
+
+Load `references/game-feel.md` before feel/juice/impact tuning, or before claiming gameplay is premium or polished. Track every loaded reference in a reference ledger with yes/no, path, and failure reason. Do not mark the gameplay phase complete while a required reference is skipped.
+
+Load `references/checklists/new-game-definition-of-done.md` before claiming a new game or first playable slice is complete.
+
+Load `references/checklists/game-design-level-design.md` before claiming a new game, major gameplay upgrade, level/encounter pass, premium gameplay, or polished gameplay is complete.
+
+Load `references/checklists/game-feel.md` before claiming feel/impact tuning or premium gameplay is complete.
+
+Load `references/checklists/endless-runner-premium-quality.md` for endless runner work.
+
+Load `references/prompt-templates.md` only when the user asks for reusable prompts, starter prompts, or a task template.
+
+Load `threejs-audio-generator` when implementing real SFX, ambience, UI sounds, voice/TTS, or audio cleanup beyond simple placeholder hooks. Gameplay code should emit audio events; the audio skill should generate or process the actual assets and define the runtime audio matrix.
+
+1. Inspect project structure, scripts, dependencies, current loop, input, camera, entities, state, UI, and diagnostics.
+2. Write the compact game design brief: player promise, target feeling, primary verb, objective, pressure, reward, fail/retry, skill expression, non-goals.
+3. Define the core loop contract: verb, objective, pressure, reward/progression, fail/retry.
+4. Define the level/encounter plan before implementation: start, first decision, first threat, first reward, landmarks, escalation, recovery beats, readability, and tuning knobs.
+5. Choose small architecture boundaries: `core`, `game`, `entities`, `systems`, `assets`, `ui`, `tests`.
+6. Implement mechanics in playable increments: input, state, entity, collision/physics, feedback, HUD/audio hook, diagnostics.
+7. Tune feel with `references/game-feel.md`: movement, acceleration, camera follow/FOV/shake, hitstop, impact feedback, cooldowns, difficulty, restart loop.
+8. Keep hot paths allocation-light and update order explicit.
+9. Verify with build, browser, screenshot, canvas pixels, console/page errors, and one real input path.
+
+## Packaged Scaffold
+
+Use the bundled scaffold when starting a new project or when the user asks for a starter game:
+
+```bash
+python3 <this-skill-dir>/scripts/create_threejs_game.py ./my-game
+```
+
+The script copies `assets/threejs-vite-game/`, rewrites the project name in `package.json` and `package-lock.json`, and keeps generated games self-contained with their own visual test and canvas-inspection script. Use `--force` only when the target directory may be overwritten.
+
+## Library Guidance
+
+- Use TypeScript, Vite, Three.js modules.
+- Physics/collision engine choice (custom collision vs Rapier vs cannon-es), timestep, and collider strategy: follow `references/physics-engine-selection.md`.
+- `lil-gui` for live-tuned constants when useful.
+- Web Audio for runtime playback and procedural feedback; `threejs-audio-generator` for generated game audio assets.
+
+## Common Failure Modes
+
+- Static demo instead of playable loop.
+- Static scene with mechanics bolted on after the fact, instead of a design brief plus level/encounter plan driving implementation.
+- Core loop is described but not proven through real input, pressure, reward/progression, and fail/retry.
+- Level/track/arena/map is decorative and does not shape player decisions.
+- Mechanic compiles but cannot be triggered by real input.
+- Camera/controls feel delayed or hide the next decision.
+- State changes do not drive UI/audio/VFX.
+- Architecture abstractions appear before mechanics need them.
+
+## Final Response
+
+Report the reference ledger, game design brief, core loop contract, level/encounter plan, gameplay checklist outcome, behavior, controls, changed files, architecture choices, tuned values, verification evidence, artifacts, and remaining edge cases.
+checklists
+game-design-level-design.md
+game-feel.md
+gameplay-workflows.md
+physics-engine-selection.md
+prompt-templates.md
+
+exec
+/bin/zsh -lc 'R=~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot; sed -n 1,120p $R/threejs-gameplay-systems/1.0.0/skills/threejs-gameplay-systems/references/gameplay-workflows.md' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+# Gameplay Workflows
+
+Use this reference for first playable slices, architecture, mechanics, entities, controls, camera, physics, audio hooks, and game-feel iteration. For broad game creation, level/arena/track/wave/hole/puzzle work, encounter design, progression, difficulty, or premium gameplay claims, also load `references/game-design-level-design.md`.
+
+## First Playable Slice
+
+The first slice must be playable, not just rendered.
+
+1. Inspect folder, scripts, dependencies, current renderer, app entrypoint, CSS, assets, and tests.
+2. Define the design brief and core loop contract from `references/game-design-level-design.md`.
+3. Define the level/encounter plan: first decision, first threat, first reward, escalation, recovery beats, and readability.
+4. Implement only the mechanics needed for that loop:
+   - renderer and scene
+   - camera and resize
+   - update/render loop
+   - input intents
+   - player entity
+   - one obstacle/enemy or challenge
+   - one reward/progress path
+   - collision/trigger checks
+   - score/status state
+   - fail/retry state
+   - minimal HUD state
+   - one audio/VFX feedback hook
+5. Add diagnostics when possible:
+   - `window.__THREE_GAME_DIAGNOSTICS__`
+   - renderer info
+   - game state snapshot
+   - input state
+   - active entity counts
+6. Verify build, browser, console/page errors, screenshot, nonblank canvas, and one real input path.
+
+Reject a slice that cannot be controlled or restarted. Also reject a slice where the level/arena/track/wave/table/puzzle is purely decorative and does not shape the player's decisions.
+
+## Architecture Boundaries
+
+Prefer simple modules once the prototype grows beyond one file:
+
+- `main`: DOM bootstrap, app lifecycle, CSS imports.
+- `core`: renderer, loop, resize, input, diagnostics.
+- `game`: orchestration, state transitions, update order, scoring/objectives.
+- `entities`: player, enemies, pickups, projectiles, obstacles.
+- `systems`: camera, collision/physics, spawning, animation, audio, UI bridge, debug.
+- `assets`: material libraries, procedural textures, model factories, loaders, disposal.
+- `tests`: browser, visual, interaction, mobile, performance smoke checks.
+
+Keep update order explicit:
+
+```text
+input -> fixed physics if any -> gameplay systems -> animation/VFX -> camera -> UI bridge -> render
+```
+
+Do not invent abstractions before the mechanics need them. Do extract duplicated entity, input, collision, and asset logic once multiple features share it.
+
+## Imported Generated 3D Assets And Animation
+
+When gameplay uses `threejs-3d-generator` GLB/FBX assets:
+
+- Load GLB assets with `GLTFLoader` from `three/addons/loaders/GLTFLoader.js`.
+- Keep imported model loading in the asset layer, not inside entity update loops.
+- Wrap imported scenes in game entities with explicit scale, bounds, collision proxy, and state hooks.
+- Use `AnimationMixer` for rigged/animated GLBs and update mixers with `deltaSeconds`.
+- Map gameplay states to clips: idle, walk/run, jump, attack/slash/shoot, hurt, fall, turn.
+- Decide whether root motion is used. For arcade games, prefer in-place animation and move the entity in code.
+- Keep simple collision proxies independent from the detailed imported mesh.
+- Add fallback placeholders or loading states if an asset fails to load.
+- Report file size, clip names, approximate triangles, and texture count after import.
+
+## Input And Intent
+
+- Convert keyboard, pointer, touch, and gamepad where relevant into game intents.
+- Keep input collection separate from simulation.
+- Support both desktop and mobile when the user asks for a browser game unless explicitly desktop-only.
+- Handle pointer release/cancel/blur so controls do not stick.
+- Keep CSS `touch-action` intentional and scoped.
+- Preserve focus and restart controls after fail/pause.
+
+## Camera And Controls
+
+Tune controls and camera together.
+
+- Movement: acceleration, deceleration, friction, turn rate, max speed, jump/gravity/boost.
+- Camera: follow lag, look-ahead, FOV, height, distance, shake, collision/framing.
+- Readability: next decision visible, player centered enough, threats not hidden by UI.
+- Feedback: hit pause, camera impulse, FOV kick, meter pulse, audio pitch, VFX socket.
+- Accessibility: avoid excessive shake, strobe, and uncontrollable motion.
+
+Use `lil-gui` for live constants when repeated tuning is likely, but gate debug UI from release.
+
+## Collision And Physics
+
+Choose the lightest reliable approach:
+
+- Simple custom collision: arcade triggers, lanes, runners, pickups, bullets, simple arenas.
+- Rapier: default robust choice for serious browser-game physics: balls, pinball, mini-golf, pool/snooker, moving platforms, sensors, rigid bodies, slopes/ramps, high-speed collisions, many contacts, and WASM-backed simulation.
+- `cannon-es`: lightweight JS fallback for small/simple rigid-body scenes when avoiding WASM matters.
+
+When physics is in scope, also load `references/physics-engine-selection.md` before choosing an engine.
+
+Rules:
+
+- Keep collision proxies simple and visible in debug mode.
+- Do not use detailed visual meshes for collision.
+- Clamp delta or use fixed-step simulation for physics.
+- Reconcile physics transforms and visual transforms in one place.
+- Test high-speed movement against tunneling and camera loss.
+- Report engine choice, package installed, timestep, body count, collider count, CCD use, sensors, and risky colliders.
+- For Rapier, initialize WASM once, step with a fixed accumulator, use primitive/compound colliders, enable CCD only for fast bodies, and dispose bodies/colliders on restart.
+
+## Gameplay Implementation Loop
+
+For each mechanic:
+
+1. Add state/data.
+2. Add simulation/update.
+3. Add visual representation.
+4. Add feedback: UI, audio, VFX, camera, animation.
+5. Add diagnostics.
+6. Verify with real input and one failing edge case.
+
+
+exec
+/bin/zsh -lc 'R=~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot; cat $R/threejs-game-ui-designer/1.0.0/skills/threejs-game-ui-designer/SKILL.md | head -60; ls $R/threejs-game-ui-designer/1.0.0/skills/threejs-game-ui-designer/references 2>/dev/null' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+---
+name: threejs-game-ui-designer
+description: "Design premium Three.js game UI. Use for HUDs, menus, overlays, pause/win/lose screens, settings, icon controls, touch UI, typography, responsive layout, safe areas, text fit, and UI/world cohesion."
+---
+
+# Three.js Game UI Designer
+
+## Purpose
+
+Make game UI intentional, readable, responsive, and genre-specific.
+
+## Workflow
+
+Load `references/ui-patterns.md` as the first action when designing HUDs, menus, overlays, pause/win/lose screens, settings, touch controls, typography, responsive layout, safe areas, text fit, icons, or UI/world cohesion. Track it in a reference ledger with yes/no, path, and failure reason. Do not mark the UI phase complete while this reference is skipped for interface work.
+
+Load `references/checklists/game-ui-quality.md`, `references/checklists/hud-readability.md`, and `references/checklists/responsive-ui-fit.md` before claiming UI/HUD/menu work is complete. Load `references/checklists/mobile-input.md` when touch controls or mobile safe areas are in scope.
+
+Load `references/prompt-templates.md` only when the user asks for reusable prompts, a UI pass prompt, or a task template.
+
+Load `threejs-image-generator` when logos, icons, GUI art, faction marks, menu backgrounds, decals, or 2D HUD assets would improve quality. Use `threejs-3d-generator` only for 3D menu/showcase objects or diegetic 3D UI props, not normal flat HUD elements.
+
+1. Capture/inspect desktop and mobile screenshots.
+2. Inventory UI states: gameplay, pause, settings, fail/retry, win/milestone, loading, touch controls.
+3. Define hierarchy: survival/status, objective, feedback, flavor.
+4. Replace utility stat cards with authored clusters, meters, badges, icons, alerts, and modal states.
+5. Use stable dimensions, safe-area padding, text-fit constraints, hover/pressed/focus/disabled states.
+6. Wire UI to game state, not duplicated rules.
+7. Verify text fit, overlap, safe areas, touch targets, responsive screenshots, and real state changes.
+
+## Common Failure Modes
+
+- Generic dashboard/stat-card HUD.
+- UI covers player/threats.
+- Text shifts/clips on mobile.
+- Decorative panels reduce readability.
+- Touch controls look right but do not emit intents.
+
+## Final Response
+
+Report the reference ledger, UI state checklist, UI intent, states covered, files changed, screenshots, text-fit/overlap checks, safe-area/touch-target evidence, controls, and remaining risks.
+checklists
+prompt-templates.md
+ui-patterns.md
+
+exec
+/bin/zsh -lc 'R=~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot; sed -n 1,80p $R/threejs-game-ui-designer/1.0.0/skills/threejs-game-ui-designer/references/ui-patterns.md | head -80; echo ===; sed -n 1,50p $R/threejs-aaa-graphics-builder/1.0.0/skills/threejs-aaa-graphics-builder/SKILL.md' in ~/side-projects/games/web/zombie-fps-local-ai
+ exited 1 in 0ms:
+# Game UI Patterns
+
+Use this when designing HUDs, menus, overlays, pause/fail/win states, touch controls, typography, responsive layout, and UI/world cohesion.
+
+## UI Principles
+
+- Build the game interface, not a web dashboard.
+- Prioritize gameplay hierarchy: survival/status, objective/progress, immediate feedback, then flavor.
+- Use meters, icons, reticles, badges, alert strips, cooldown rings, inventory slots, minimaps, diegetic labels, and compact clusters before generic stat cards.
+- Keep UI outside the play path and away from threats, pickups, the player, and the next decision.
+- UI should reinforce the world art direction through material cues, color roles, icon shapes, and motion language.
+- Do not use visible text to explain obvious controls when an icon, affordance, or direct interaction can do the job.
+
+## Required States
+
+Inventory states before designing:
+
+- Gameplay HUD.
+- Pause/resume.
+- Settings or audio/accessibility controls when useful.
+- Fail/retry.
+- Win/milestone/level complete when relevant.
+- Loading/empty/error when async assets exist.
+- Mobile/touch controls when target includes mobile.
+- Debug/tuning UI gated separately from player UI.
+
+Premium games should not have only one HUD state.
+
+## HUD Composition
+
+Use intentional zones:
+
+- Top or top-left: objective, wave, distance, timer, route/progress.
+- Top or top-right: score, currency, combo, inventory, pause.
+- Bottom left/right: touch movement/action controls when needed.
+- Center top or near player: short event banners, combo, warnings.
+- Near-world labels: diegetic prompts, target markers, offscreen indicators.
+
+Rules:
+
+- Use fixed-width numeric containers for score, timer, ammo, speed, health, and best values.
+- Use icons plus short labels for unfamiliar resources.
+- Use meter fills for quantities the player must read quickly.
+- Use alert colors consistently: danger, reward, shield, boost, objective, disabled.
+- Animate state changes briefly: count-up, meter fill, pulse, slide/fade, snap, ring cooldown.
+- Do not stack multiple large banners over the play path.
+
+## Menus And Overlays
+
+Pause/fail/win overlays should support quick action:
+
+- Primary action first: resume, retry, continue, next.
+- Secondary actions: settings, quit, restart, level select.
+- Avoid marketing-page hero layouts inside a game.
+- Keep menu panels stable and readable across desktop/mobile.
+- Use icon buttons for pause, sound, restart, fullscreen, settings when familiar.
+- Provide focus/hover/pressed/disabled states.
+- Gate debug panels behind a dev flag or query param.
+
+## Touch Controls
+
+When mobile is in scope:
+
+- Use pointer events where possible.
+- Ensure controls emit the same game intents as keyboard/mouse.
+- Handle `pointerup`, `pointercancel`, `lostpointercapture`, blur, and visibility change.
+- Use safe-area insets.
+- Avoid controls overlapping HUD warnings or the play path.
+- Keep touch targets at least roughly 44 CSS pixels where practical.
+- Separate adjacent controls enough to prevent accidental presses.
+- Use `touch-action` to prevent unwanted page scrolling only in control regions or the game surface.
+
+## Responsive Constraints
+
+- Define stable dimensions with CSS variables, `clamp`, grid tracks, fixed icon slots, and fixed-width numbers.
+- Do not scale text purely with viewport width.
+- Avoid negative letter spacing.
+- Check desktop, laptop, tablet/narrow, and phone viewports.
+- Test longest likely values: high score, long labels, multi-digit timers, localized-ish text if relevant.
+- No clipped text, overlapping controls, unreadably small labels, or layout shift from changing values.
+zsh:1: == not found
+
+exec
+/bin/zsh -lc 'R=~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot; sed -n 1,60p $R/threejs-aaa-graphics-builder/1.0.0/skills/threejs-aaa-graphics-builder/SKILL.md; grep -n -i "first person'"\\|fps\\|raycast\\|crosshair\\|pointer\" "'$R/game-engine/1.0.0/skills/game-engine/references/3d-web-games.md | head -30' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+---
+name: threejs-aaa-graphics-builder
+description: "Upgrade Three.js games from basic/prototype visuals to premium AAA-inspired browser graphics. Combines art-direction critique, procedural model building, technical art, mandatory external asset sourcing decisions, threejs-3d-generator assets, threejs-image-generator concept/texture workflows, scene visual polish, material/texture libraries, world prop kits, shaders, VFX readability, render budgets, LOD/instancing, render pipeline, and visual scorecard gates. For premium games with characters, vehicles, ships, weapons, buildings, signature props, skies, textures, decals, logos, icons, or GUI art, load the relevant generator skills before deciding procedural assets are enough."
+---
+
+# Three.js AAA Graphics Builder
+
+## Purpose
+
+Own the production graphics pass. Convert basic screenshots into authored, high-density, performance-aware visual experiences.
+
+## Use When
+
+Screenshots still look basic, models look primitive, worlds are sparse, UI/world art feels generic, or the user asks for premium, AAA, high-fidelity, showcase, or less-basic graphics.
+
+## Required References
+
+These references are required phase-entry gates, not optional reading:
+
+- Load `references/visual-scorecard.md` before scoring, judging completion, or making any premium/AAA/showcase claim.
+- Load `references/implementation-blueprint.md` before changing graphics architecture, materials, VFX, rendering, diagnostics, or broad visual systems.
+- Load `references/model-recipes.md` before building or upgrading hero/player, obstacle, enemy, pickup, world-kit, material, or prop models.
+- Load `references/render-recipes.md` before changing lighting, tone mapping, shadows, fog, post-processing, materials, or render composition.
+- Load `references/technical-art.md` before premium/AAA/showcase graphics work, shaders/material systems, VFX systems, generated/imported asset cleanup, LOD/instancing work, or visual changes that could affect browser performance.
+- Load `references/shader-cookbook.md` before writing any custom shader, `onBeforeCompile` injection, material recipe, sky, or post-processing chain — use its proven values and GLSL patterns instead of improvising.
+- Load `references/checklists/aaa-game-quality-gate.md` and `references/checklists/aaa-visual-scorecard.md` before declaring a game premium, AAA, showcase, complete, release-ready, or less basic.
+- Load the relevant checklist before focused work: `references/checklists/procedural-model-quality.md`, `references/checklists/material-lighting-quality.md`, `references/checklists/performance-safe-visual-detail.md`, or `references/checklists/technical-art-quality.md`.
+- Load `references/prompt-templates.md` only when the user asks for reusable prompts, a graphics-pass prompt, or a task template.
+
+For broad "still looks basic", premium, AAA, high-fidelity, showcase, or less-basic graphics work, load all five references as the first action in the phase. Track them in a reference ledger with yes/no, path, and failure reason. Do not mark the graphics phase complete while any required reference is skipped.
+
+External asset sourcing gate:
+
+- For premium/AAA/showcase/high-fidelity/less-basic graphics with a hero/player, character, creature, boss, vehicle, ship, building, weapon, signature prop, complex pickup, or hero environment piece, load `threejs-3d-generator` before deciding procedural geometry is enough.
+- For premium/AAA/showcase/high-fidelity/less-basic graphics with concept needs, texture/material references, decals, logos, faction marks, icons, GUI art, skies, backgrounds, title/menu art, or image-to-3D inputs, load `threejs-image-generator` before deciding 2D external assets are not needed.
+- Run the director credential probe before using `key unavailable` as a skip reason and paste the SET/MISSING output.
+- Create an asset sourcing ledger for each high-value surface: procedural / threejs-image-generator / threejs-3d-generator / hybrid, plus outputs or skip reason.
+- `not-needed` is valid only after the relevant skill was loaded and the ledger explains why external generation would not improve a non-hero support surface, or why the credential probe or attempted generation shows a real blocker.
+- For premium hero surfaces, procedural-only is not an allowed final answer unless there is real blocker evidence. At least one high-value surface must show a 3D generator task ID, downloaded GLB/GLTF/FBX path, image generator output path, or documented hybrid chain.
+
+## Workflow
+
+1. Capture or inspect active desktop/mobile screenshots.
+2. Score visuals across art direction, hero/player, obstacles, rewards, world, materials, render, VFX, UI, and performance evidence.
+3. Add missing graphics architecture: material library, procedural textures/decals, model factories, world prop kit, technical-art budget, VFX system, render pipeline, diagnostics.
+4. Run the credential probe, then fill the external asset sourcing ledger per surface: procedural Three.js factory, `threejs-image-generator` 2D reference/texture, `threejs-3d-generator` 3D generation, or a hybrid.
+5. Upgrade every weak visible surface, not only one hero object.
+6. Add lighting/render/material polish after authored forms exist.
+7. Add event-driven VFX tied to gameplay state.
+8. Re-score screenshots against the calibration anchors, citing the inspector's measured metrics. Continue until every premium category is at least 2/3 or report exact blockers.
+9. Run the fresh-eyes review per `references/visual-scorecard.md` before finalizing premium/AAA/showcase claims.
+10. Verify renderer diagnostics against the render budget table, technical-art budget, desktop/mobile screenshots, console/page errors, canvas pixels, imported asset budgets, and playability.
+
+## Core Rule
+
+Do not make primitives look AAA by adding glow. First build authored forms, then materials, then lighting, then effects.
+
+## Final Response
+
+Report the reference ledger, credential probe output, external asset sourcing ledger, technical art brief, score before/after, production surfaces upgraded, files changed, screenshots/artifacts, renderer diagnostics, imported asset diagnostics when relevant, VFX readability and render-budget tradeoffs, and remaining blockers. For premium/AAA/showcase claims, include the filled visual scorecard exactly as defined in `references/visual-scorecard.md`, including average and automatic failures remaining.
+753:- Maintain a stable, high frame rate (72-90+ FPS) to prevent motion sickness.
+
+exec
+/bin/zsh -lc "R=~/qa-baseline/external-knowledge/codex-home-robot-tps/plugins/cache/gamedev-robot; grep -n -i \"first-person\\|first person\\|pointer lock\\|yaw\\|strafe\\|raycaster\\|crosshair\\|NDC\\|unproject\" "'$R/game-engine/1.0.0/skills/game-engine/references/3d-web-games.md | head -40' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+127:document.body.appendChild(renderer.domElement);
+333:scene.appendChild(cylinder);
+
+exec
+/bin/zsh -lc "head -c 600 ~/side-projects/games/web/zombie-fps-local-ai/three.module.js; grep -o \"REVISION = '["'^'"']*'\" ~/side-projects/games/web/zombie-fps-local-ai/three.module.js | head -2; grep -o \"export {\" ~/side-projects/games/web/zombie-fps-local-ai/three.module.js | head -1" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+/**
+ * @license
+ * Copyright 2010-2023 Three.js Authors
+ * SPDX-License-Identifier: MIT
+ */
+const REVISION = '160';
+
+const MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
+const TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
+const CullFaceNone = 0;
+const CullFaceBack = 1;
+const CullFaceFront = 2;
+const CullFaceFrontBack = 3;
+const BasicShadowMap = 0;
+const PCFShadowMap = 1;
+const PCFSoftShadowMap = 2;
+const VSMShadowMap = 3;
+const FrontSide = 0;
+const BackSide = 1;
+const DoubleSide = 2;
+const TwoPassDoubleSide = 2; // r149
+const NoBlending = 0;
+const NormalREVISION = '160'
+export {
+
+  ✓ Read relevant Skills' SKILL.md + references
+  → Scaffold index.html + game (room, camera, WASD)
+  • Crosshair + centre-view aim ray + calibration target
+  • Zombies, health bars, 5-hit death, hit feedback
+  • Test hooks (__AGENT_STATE__, fire, setYaw/setPos)
+  • Browser verification: screen-projection proof, camera-relative, crosshair, 5-hit
+  • Polish visuals + write REPORT.md
+exec
+/bin/zsh -lc "cat > ~/side-projects/games/web/zombie-fps-local-ai/index.html <<'HTML'
+<"'!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zombie FPS — block prototype</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; }
+  #app { position: fixed; inset: 0; }
+  canvas { display: block; }
+
+  /* Crosshair: exactly at viewport centre */
+  #crosshair { position: fixed; left: 50%; top: 50%; width: 0; height: 0;
+    transform: translate(-50%, -50%); pointer-events: none; z-index: 10; }
+  #crosshair .h, #crosshair .v { position: absolute; background: #d8ffe0;
+    box-shadow: 0 0 3px rgba(0,0,0,.9); }
+  #crosshair .h { width: 18px; height: 2px; left: -9px; top: -1px; }
+  #crosshair .v { width: 2px; height: 18px; left: -1px; top: -9px; }
+  #crosshair .dot { position: absolute; width: 2px; height: 2px; left: -1px; top: -1px;
+    background: #ffffff; }
+
+  #hud { position: fixed; left: 16px; bottom: 14px; color: #cfe8d8; z-index: 10;
+    font: 600 13px/1.5 ui-monospace, Menlo, monospace; pointer-events: none;
+    text-shadow: 0 1px 2px #000; }
+  #hud .row { display: flex; align-items: center; gap: 8px; }
+  #hpbar { width: 220px; height: 10px; background: rgba(0,0,0,.55); border: 1px solid #3d5a48; }
+  #hpfill { height: 100%; width: 100%; background: linear-gradient(90deg, #46e07f, #b6ff5e); transition: width .12s; }
+
+  #banner { position: fixed; left: 50%; top: 18%; transform: translateX(-50%);
+    color: #ffe9a8; font: 700 22px ui-monospace, Menlo, monospace; z-index: 10;
+    pointer-events: none; text-shadow: 0 2px 6px #000; opacity: 0; transition: opacity .3s; }
+
+  #start { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px; background: rgba(4,8,6,.82);
+    color: #e8ffe8; font: 500 15px/1.6 ui-monospace, Menlo, monospace; text-align: center; }
+  #start h1 { font-size: 26px; margin: 0; letter-spacing: 2px; }
+  #start .btn { pointer-events: auto; cursor: pointer; padding: 10px 26px; font: inherit;
+    background: #1d3a2a; color: #cfffdf; border: 1px solid #4d8f66; border-radius: 6px; }
+  #start .btn:hover { background: #2a5238; }
+  #start small { opacity: .75; }
+  #start.hidden { display: none; }
+
+  #debug { position: fixed; right: 12px; bottom: 12px; z-index: 11; display: none;
+    color: #9fd8ff; font: 11px ui-monospace, Menlo, monospace; text-align: right;
+    text-shadow: 0 1px 2px #000; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="crosshair"><div class="h"></div><div class="v"></div><div class="dot"></div></div>
+<div id="hud">
+  <div class="row">HP <div id="hpbar"><div id="hpfill"></div></div> <span id="hptext">100</span></div>
+  <div class="row" id="score">KILLS 0 / 2</div>
+</div>
+<div id="banner"></div>
+<div id="debug"></div>
+<div id="start">
+  <h1>ZOMBIE HALL</h1>
+  <div>Click to play &mdash; pointer lock engages</div>
+  <div class="btn" id="playBtn">CLICK TO START</div>
+  <small>WASD move &middot; mouse look &middot; hold LEFT MOUSE to fire<br>
+  Two zombies at the far end &mdash; 5 hits each</small>
+</div>
+<script type="module" src="./game.js"></script>
+</body>
+</html>
+HTML
+echo done' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+done
+
+codex
+Now the main game file — this is the core implementation:
+
+
+exec
+/bin/zsh -lc "cat > ~/side-projects/games/web/zombie-fps-local-ai/game.js <<'JS'
+import * as THREE from './three.module.js';
+
+// ---------------------------------------------------------------------------
+// Coordinate convention (world):
+//   logical (x, y) -> world (x, 0, -y)   [logical +Y = world -Z]
+//   logical z (height) -> world +Y
+// Spawn: player at logical (0,0), looking toward logical +Y (world -Z).
+// Screen projection (Three.js standard): for a camera looking along world -Z,
+//   world +X projects to screen RIGHT, world -Z projects to screen UP/forward.
+// So: W -> world -Z (forward), S -> +Z (back), A -> -X (screen left), D -> +X (screen right).
+// This is PROVEN via screen-space projection in the verification phase, not assumed.
+// ---------------------------------------------------------------------------
+
+const ROOM_HALF = 14;            // room spans logical x,z in [-14, 14]
+const WALL_H = 5;
+const PLAYER_HEIGHT = 1.7;
+const PLAYER_SPEED = 6.0;        // logical units / s
+const MOUSE_SENS = 0.0022;
+const FIRE_INTERVAL = 0.09;      // s between shots (rapid)
+const ZOMBIE_HP = 5;
+const ZOMBIE_B_SPEED = 0.9;      // slow approach
+const ZOMBIE_MIN_DIST = 2.2;     // stops when close
+const PLAYER_HP = 100;
+const ZOMBIE_ATTACK_RANGE = 1.6;
+const ZOMBIE_ATTACK_DPS = 12;
+
+const l2w = (x, z) => new THREE.Vector3(x, 0, -z);
+const w2l = (p) => ({ x: p.x, z: -p.z });
+
+// ---------------- renderer / scene / camera -------------------------------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.getElementById('app').appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b100d);
+scene.fog = new THREE.Fog(0x0b100d, 24, 46);
+
+const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.05, 200);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ---------------- lights ----------------------------------------------------
+scene.add(new THREE.HemisphereLight(0x8fb49a, 0x1a1410, 0.55));
+const key = new THREE.DirectionalLight(0xfff2d8, 1.6);
+key.position.set(8, 12, -6);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left = -18; key.shadow.camera.right = 18;
+key.shadow.camera.top = 18; key.shadow.camera.bottom = -18;
+key.shadow.camera.far = 40;
+key.shadow.bias = -0.0004;
+scene.add(key);
+// ceiling lamp glows
+for (const [lx, lz] of [[-7, 0], [0, -7], [0, 7], [7, 0]]) {
+  const p = new THREE.PointLight(0xffd9a0, 12, 14, 2);
+  p.position.set(lx, WALL_H - 0.4, -lz);
+  scene.add(p);
+}
+
+// ---------------- materials -------------------------------------------------
+const matFloorA = new THREE.MeshStandardMaterial({ color: 0x3a4a3f, roughness: 0.92 });
+const matFloorB = new THREE.MeshStandardMaterial({ color: 0x2f3d34, roughness: 0.95 });
+const matWall   = new THREE.MeshStandardMaterial({ color: 0x4a5560, roughness: 0.85 });
+const matWallTrim = new THREE.MeshStandardMaterial({ color: 0x6b7684, roughness: 0.7 });
+const matCeil   = new THREE.MeshStandardMaterial({ color: 0x232a26, roughness: 0.95 });
+const matLamp   = new THREE.MeshBasicMaterial({ color: 0xffe9b8 });
+
+// ---------------- room ------------------------------------------------------
+const room = new THREE.Group();
+scene.add(room);
+
+// tiled floor: 1x1 tiles with checker variation
+const tileGeo = new THREE.BoxGeometry(1, 0.1, 1);
+for (let ix = -ROOM_HALF; ix < ROOM_HALF; ix++) {
+  for (let iz = -ROOM_HALF; iz < ROOM_HALF; iz++) {
+    const m = new THREE.Mesh(tileGeo, ((ix + iz) & 1) === 0 ? matFloorA : matFloorB);
+    m.position.set(ix + 0.5, -0.05, -(iz + 0.5));
+    m.receiveShadow = true;
+    room.add(m);
+  }
+}
+// walls (4) with trim
+function wall(len, px, pz, rotY) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(len, WALL_H, 0.4), matWall);
+  body.position.y = WALL_H / 2;
+  body.castShadow = body.receiveShadow = true;
+  g.add(body);
+  const trim = new THREE.Mesh(new THREE.BoxGeometry(len, 0.35, 0.46), matWallTrim);
+  trim.position.y = 0.5;
+  g.add(trim);
+  const trim2 = trim.clone(); trim2.position.y = WALL_H - 0.3; g.add(trim2);
+  g.position.set(px, 0, pz);
+  g.rotation.y = rotY;
+  return g;
+}
+room.add(wall(ROOM_HALF * 2 + 0.8, 0, -(ROOM_HALF + 0.2), 0));
+room.add(wall(ROOM_HALF * 2 + 0.8, 0, ROOM_HALF + 0.2, 0));
+room.add(wall(ROOM_HALF * 2 + 0.8, -(ROOM_HALF + 0.2), 0, Math.PI / 2));
+room.add(wall(ROOM_HALF * 2 + 0.8, ROOM_HALF + 0.2, 0, Math.PI / 2));
+// ceiling
+const ceil = new THREE.Mesh(new THREE.BoxGeometry(ROOM_HALF * 2 + 1, 0.3, ROOM_HALF * 2 + 1), matCeil);
+ceil.position.y = WALL_H + 0.15;
+room.add(ceil);
+// lamp fixtures
+for (const [lx, lz] of [[-7, 0], [0, -7], [0, 7], [7, 0]]) {
+  const f = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.15, 1.2), matLamp);
+  f.position.set(lx, WALL_H - 0.08, -lz);
+  room.add(f);
+}
+// some crates/props for depth
+const matCrate = new THREE.MeshStandardMaterial({ color: 0x7a5c3a, roughness: 0.8 });
+const matCrate2 = new THREE.MeshStandardMaterial({ color: 0x5d6b78, roughness: 0.6, metalness: 0.3 });
+const crateSpots = [
+  [-10, -10, 1.4, matCrate], [-9.2, -10.4, 0.9, matCrate2], [10, 10, 1.6, matCrate],
+  [11, 9.2, 1.0, matCrate], [-10.5, 10, 1.2, matCrate2], [10.4, -10.2, 1.1, matCrate],
+];
+for (const [x, z, s, m] of crateSpots) {
+  const c = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), m);
+  c.position.set(x, s / 2, -z);
+  c.castShadow = c.receiveShadow = true;
+  room.add(c);
+}
+
+// ---------------- player state ---------------------------------------------
+const player = {
+  logical: { x: 0, z: 0 },        // spawn at logical (0,0)
+  yaw: 0,                         // 0 => looking toward logical +Y (world -Z)
+  pitch: 0,
+  hp: PLAYER_HP,
+  alive: true,
+};
+const keys = Object.create(null);
+let pointerLocked = false;
+let firing = false;
+let fireCooldown = 0;
+let lastShot = { hit: false, targetId: null, t: 0 };
+let kills = 0;
+let ready = false;
+let time = 0;
+
+function cameraForwardWorld() {
+  // yaw=0 -> (0,0,-1); right turn (mouse right) increases yaw -> toward +X
+  const cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+  return new THREE.Vector3(sy, 0, -cy);
+}
+function cameraRightWorld() {
+  const cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+  return new THREE.Vector3(cy, 0, sy);
+}
+function syncCamera() {
+  const p = l2w(player.logical.x, player.logical.z);
+  camera.position.set(p.x, PLAYER_HEIGHT, p.z);
+  camera.rotation.set(0, 0, 0);
+  camera.rotateY(player.yaw);
+  camera.rotateX(player.pitch);
+}
+
+// ---------------- input -----------------------------------------------------
+const startEl = document.getElementById('start');
+document.getElementById('playBtn').addEventListener('click', () => {
+  renderer.domElement.requestPointerLock();
+});
+document.addEventListener('pointerlockchange', () => {
+  pointerLocked = document.pointerLockElement === renderer.domElement;
+  startEl.classList.toggle('hidden', pointerLocked);
+  if ("'!pointerLocked) { firing = false; for (const k in keys) keys[k] = false; }
+});
+document.addEventListener('"'mousemove', (e) => {
+  if ("'!pointerLocked) return;
+  player.yaw += e.movementX * MOUSE_SENS;   // mouse right -> yaw+ -> turn right
+  player.pitch -= e.movementY * MOUSE_SENS; // mouse up -> pitch+ (look up)
+  player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch));
+});
+window.addEventListener('"'keydown', (e) => {
+  if (e.code === 'KeyW' || e.code === 'KeyA' || e.code === 'KeyS' || e.code === 'KeyD') {
+    keys[e.code] = true; e.preventDefault();
+  }
+});
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+renderer.domElement.addEventListener('mousedown', (e) => {
+  if (e.button === 0 && pointerLocked) firing = true;
+});
+window.addEventListener('mouseup', (e) => { if (e.button === 0) firing = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; firing = false; });
+
+// ---------------- movement --------------------------------------------------
+function updateMovement(dt) {
+  if ("'!player.alive) return;
+  const fwd = cameraForwardWorld();   // horizontal by construction (yaw only)
+  const right = cameraRightWorld();
+  let mx = 0, mz = 0;
+  if (keys['"'KeyW']) { mx += fwd.x; mz += fwd.z; }
+  if (keys['KeyS']) { mx -= fwd.x; mz -= fwd.z; }
+  if (keys['KeyA']) { mx -= right.x; mz -= right.z; }
+  if (keys['KeyD']) { mx += right.x; mz += right.z; }
+  const len = Math.hypot(mx, mz);
+  if (len > 0) {
+    mx /= len; mz /= len;
+    const p = l2w(player.logical.x, player.logical.z);
+    p.x += mx * PLAYER_SPEED * dt;
+    p.z += mz * PLAYER_SPEED * dt;
+    const lim = ROOM_HALF - 0.6;
+    p.x = Math.max(-lim, Math.min(lim, p.x));
+    p.z = Math.max(-lim, Math.min(lim, p.z));
+    player.logical.x = p.x;
+    player.logical.z = -p.z;
+  }
+}
+
+// ---------------- zombies ---------------------------------------------------
+function makeZombieMaterialSet(id) {
+  const skin = id === 'A' ? 0x5e7d4a : 0x6d5a4e;
+  const shirt = id === 'A' ? 0x44503c : 0x4a3a34;
+  const pants = 0x2e2a26;
+  const eye = 0xffb347;
+  return {
+    skin: new THREE.MeshStandardMaterial({ color: skin, roughness: 0.85 }),
+    shirt: new THREE.MeshStandardMaterial({ color: shirt, roughness: 0.9 }),
+    pants: new THREE.MeshStandardMaterial({ color: pants, roughness: 0.95 }),
+    eye: new THREE.MeshBasicMaterial({ color: eye }),
+  };
+}
+
+function buildZombie(id) {
+  const mats = makeZombieMaterialSet(id);
+  const g = new THREE.Group();
+  const box = (w, h, d, m, x, y, z, ry = 0) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+    mesh.position.set(x, y, z);
+    mesh.rotation.y = ry;
+    mesh.castShadow = mesh.receiveShadow = true;
+    g.add(mesh);
+    return mesh;
+  };
+  // legs
+  box(0.22, 0.85, 0.26, mats.pants, -0.15, 0.425, 0);
+  box(0.22, 0.85, 0.26, mats.pants, 0.15, 0.425, 0);
+  // torso
+  box(0.62, 0.75, 0.34, mats.shirt, 0, 1.225, 0);
+  // arms (reaching forward, classic zombie)
+  box(0.16, 0.16, 0.62, mats.skin, -0.42, 1.45, 0.22, 0.08);
+  box(0.16, 0.16, 0.62, mats.skin, 0.42, 1.45, 0.22, -0.08);
+  // hands
+  box(0.14, 0.14, 0.14, mats.skin, -0.44, 1.45, 0.56);
+  box(0.14, 0.14, 0.14, mats.skin, 0.44, 1.45, 0.56);
+  // head
+  box(0.42, 0.42, 0.42, mats.skin, 0, 1.86, 0);
+  // eyes (face -Z? no: zombie faces +Z in its local frame... we face it toward player via rotation)
+  box(0.09, 0.05, 0.02, mats.eye, -0.11, 1.9, 0.21);
+  box(0.09, 0.05, 0.02, mats.eye, 0.11, 1.9, 0.21);
+  // mouth
+  box(0.18, 0.05, 0.02, new THREE.MeshStandardMaterial({ color: 0x2a1414 }), 0, 1.76, 0.21);
+  // shoulders
+  box(0.2, 0.18, 0.28, mats.shirt, -0.36, 1.56, 0);
+  box(0.2, 0.18, 0.28, mats.shirt, 0.36, 1.56, 0);
+  // health bar (canvas texture)
+  const barCanvas = document.createElement('canvas');
+  barCanvas.width = 128; barCanvas.height = 16;
+  const barTex = new THREE.CanvasTexture(barCanvas);
+  barTex.colorSpace = THREE.SRGBColorSpace;
+  const barMat = new THREE.MeshBasicMaterial({ map: barTex, transparent: true, depthTest: false });
+  const barMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.11), barMat);
+  barMesh.position.set(0, 2.35, 0);
+  barMesh.renderOrder = 999;
+  g.add(barMesh);
+  return { group: g, barCanvas, barTex, barMesh, mats };
+}
+
+function drawHealthBar(z) {
+  const ctx = z.barCanvas.getContext('2d');
+  ctx.clearRect(0, 0, 128, 16);
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, 128, 16);
+  const frac = z.hp / ZOMBIE_HP;
+  ctx.fillStyle = frac > 0.6 ? '#57e06a' : frac > 0.3 ? '#e0c257' : '#e0574a';
+  ctx.fillRect(2, 2, 124 * frac, 12);
+  ctx.strokeStyle = '#0c1a10'; ctx.strokeRect(0.5, 0.5, 127, 15);
+  z.barTex.needsUpdate = true;
+}
+
+function makeZombie(id, logicalPos, moving) {
+  const built = buildZombie(id);
+  built.group.position.copy(l2w(logicalPos.x, logicalPos.z));
+  scene.add(built.group);
+  const z = {
+    id, hp: ZOMBIE_HP, alive: true, moving,
+    logical: { ...logicalPos },
+    group: built.group, barCanvas: built.barCanvas, barTex: built.barTex, barMesh: built.barMesh,
+    hitFlash: 0, deathT: 0, attackCd: 0,
+    hitboxes: [],
+  };
+  // collision proxies: torso + head boxes (world AABB, axis-aligned; group only yaw-rotated)
+  for (const mesh of built.group.children) {
+    if (mesh === built.barMesh) continue;
+    const geo = mesh.geometry;
+    geo.computeBoundingBox();
+    z.hitboxes.push({
+      min: geo.boundingBox.min.clone(),
+      max: geo.boundingBox.max.clone(),
+    });
+  }
+  drawHealthBar(z);
+  return z;
+}
+
+const zombieA = makeZombie('A', { x: -2.5, z: 11 }, false);
+const zombieB = makeZombie('B', { x: 2.5, z: 11 }, true);
+const zombies = [zombieA, zombieB];
+
+function zombieWorldHitboxes(z) {
+  const p = z.group.position;
+  const cy = Math.cos(z.group.rotation.y), sy = Math.sin(z.group.rotation.y);
+  return z.hitboxes.map((hb) => {
+    const rot = (v) => new THREE.Vector3(
+      v.x * cy + v.z * sy, v.y, -v.x * sy + v.z * cy
+    );
+    const mn = rot(hb.min).add(p);
+    const mx = rot(hb.max).add(p);
+    return new THREE.Box3(new THREE.Vector3(Math.min(mn.x, mx.x), Math.min(mn.y, mx.y), Math.min(mn.z, mx.z)),
+      new THREE.Vector3(Math.max(mn.x, mx.x), Math.max(mn.y, mx.y), Math.max(mn.z, mx.z)));
+  });
+}
+
+function updateZombies(dt) {
+  for (const z of zombies) {
+    if ("'!z.alive) {
+      // death animation: fall over
+      z.deathT = Math.min(z.deathT + dt, 1.2);
+      const fall = Math.min(z.deathT / 0.5, 1);
+      z.group.rotation.x = -(Math.PI / 2) * fall; // tips backward
+      z.group.position.y = 0.25 * (1 - fall) + 0.25;
+      z.barMesh.visible = false;
+      continue;
+    }
+    // face player
+    const p = l2w(player.logical.x, player.logical.z);
+    const zp = z.group.position;
+    const toPlayer = new THREE.Vector3(p.x - zp.x, 0, p.z - zp.z);
+    const dist = toPlayer.length();
+    z.group.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+    if (z.moving && dist > ZOMBIE_MIN_DIST && player.alive) {
+      toPlayer.normalize();
+      zp.addScaledVector(toPlayer, ZOMBIE_B_SPEED * dt);
+      // walk bob
+      z.group.position.y = Math.abs(Math.sin(time * 4)) * 0.04;
+    } else {
+      z.group.position.y = 0;
+    }
+    // face health bar toward camera (billboard)
+    z.barMesh.lookAt(camera.position);
+    // hit flash
+    if (z.hitFlash > 0) {
+      z.hitFlash -= dt;
+      const f = z.hitFlash > 0 ? 0.55 : 0;
+      for (const m of z.group.children) {
+        if (m === z.barMesh) continue;
+        if (m.material.emissive) m.material.emissive.setScalar(f);
+      }
+    }
+    // attack player
+    if (dist < ZOMBIE_ATTACK_RANGE && player.alive) {
+      z.attackCd -= dt;
+      if (z.attackCd <= 0) {
+        z.attackCd = 0.8;
+        damagePlayer(6, z.id);
+      }
+    } else {
+      z.attackCd = 0;
+    }
+    z.logical.x = zp.x; z.logical.z = -zp.z;
+  }
+}
+
+// ---------------- player damage --------------------------------------------
+function damagePlayer(amount, from) {
+  if (!player.alive) return;
+  player.hp -= amount;
+  if (player.hp <= 0) {
+    player.hp = 0;
+    player.alive = false;
+    showBanner('"'YOU DIED — click to respawn');
+    document.exitPointerLock();
+  }
+  updateHud();
+}
+
+// ---------------- aiming / shooting -----------------------------------------
+const raycaster = new THREE.Raycaster();
+
+function aimRay() {
+  // Authoritative aim: camera centre (NDC (0,0)) — exactly what the crosshair covers.
+  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+  return raycaster;
+}
+
+function crosshairTarget() {
+  const rc = aimRay();
+  let best = null, bestT = Infinity;
+  for (const z of zombies) {
+    if ("'!z.alive) continue;
+    for (const box of zombieWorldHitboxes(z)) {
+      const t = rc.ray.intersectBox(box, new THREE.Vector3());
+      if (t && t.distanceTo(rc.ray.origin) < bestT) {
+        bestT = rc.ray.distanceTo(t);
+        best = { targetId: z.id, point: t, dist: bestT };
+      }
+    }
+  }
+  return best;
+}
+
+const gunGroup = new THREE.Group();
+{
+  const metal = new THREE.MeshStandardMaterial({ color: 0x3a3f45, roughness: 0.4, metalness: 0.7 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x23262a, roughness: 0.5, metalness: 0.5 });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xc9a17a, roughness: 0.8 });
+  const sleeve = new THREE.MeshStandardMaterial({ color: 0x33402e, roughness: 0.9 });
+  // gun body
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.5), metal);
+  body.position.set(0, 0, -0.25);
+  gunGroup.add(body);
+  const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.34), dark);
+  barrel.position.set(0, 0.02, -0.62);
+  gunGroup.add(barrel);
+  const mag = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.16, 0.09), dark);
+  mag.position.set(0, -0.1, -0.2);
+  gunGroup.add(mag);
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.14, 0.09), dark);
+  grip.position.set(0, -0.09, -0.02);
+  grip.rotation.x = 0.25;
+  gunGroup.add(grip);
+  // stock
+  const stock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.16), new THREE.MeshStandardMaterial({ color: 0x5a4632, roughness: 0.8 }));
+  stock.position.set(0, -0.02, 0.08);
+  gunGroup.add(stock);
+  // arms: sleeves + hands
+  for (const side of [-1, 1]) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.34), sleeve);
+    arm.position.set(side * 0.14, -0.12, 0.05);
+    arm.rotation.z = side * -0.18;
+    gunGroup.add(arm);
+    const hand = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.12), skin);
+    hand.position.set(side * 0.1, -0.1, side === 1 ? -0.28 : -0.05);
+    gunGroup.add(hand);
+  }
+  // muzzle flash (hidden)
+  const flash = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0 }));
+  flash.position.set(0, 0.02, -0.8);
+  gunGroup.add(flash);
+  gunGroup.userData.flash = flash;
+}
+camera.add(gunGroup);
+gunGroup.position.set(0.22, -0.22, -0.45);
+scene.add(camera);
+let recoil = 0;
+let bobT = 0;
+
+function fire() {
+  if (!player.alive || !ready) return;
+  fireCooldown = FIRE_INTERVAL;
+  const target = crosshairTarget();
+  if (target) {
+    const z = zombies.find((zz) => zz.id === target.targetId);
+    z.hp -= 1;
+    z.hitFlash = 0.12;
+    drawHealthBar(z);
+    if (z.hp <= 0) {
+      z.hp = 0;
+      z.alive = false;
+      kills++;
+      z.group.traverse((o) => {
+        if (o.material && o.material.emissive) o.material.emissive.setHex(0x551111);
+      });
+      showBanner(z.id === '"'A' ? 'ZOMBIE A DOWN' : 'ZOMBIE B DOWN');
+      if (kills === 2) showBanner('ALL CLEAR — YOU WIN');
+    }
+    lastShot = { hit: true, targetId: z.id, t: time, hpAfter: z.hp };
+  } else {
+    lastShot = { hit: false, targetId: null, t: time };
+  }
+  recoil = 1;
+  updateHud();
+}
+
+// ---------------- HUD ---------------------------------------------------------
+const hpFill = document.getElementById('hpfill');
+const hpText = document.getElementById('hptext');
+const scoreEl = document.getElementById('score');
+const bannerEl = document.getElementById('banner');
+let bannerTimer = 0;
+function showBanner(text) {
+  bannerEl.textContent = text;
+  bannerEl.style.opacity = '1';
+  bannerTimer = 2.5;
+}
+function updateHud() {
+  hpFill.style.width = "'`${(player.hp / PLAYER_HP) * 100}%`;
+  hpText.textContent = Math.ceil(player.hp);
+  scoreEl.textContent = `KILLS ${kills} / 2`;
+}
+
+// ---------------- debug floor labels (toggle, off by default) ----------------
+let debugLabels = null;
+function setDebugLabels(on) {
+  if (on && !debugLabels) {
+    debugLabels = new THREE.Group();
+    const pts = [[0, 1], [0, -1], [-1, 0], [1, 0], [0, 2], [0, -2], [-2, 0], [2, 0]];
+    for (const [x, z] of pts) {
+      const c = document.createElement('"'canvas');
+      c.width = 256; c.height = 64;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, 0, 256, 64);
+      ctx.fillStyle = '#7fe7ff'; ctx.font = 'bold 40px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText("'`(${x},${z})`, 128, 32);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.22),
+        new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false }));
+      m.position.set(x, 0.06, -z);
+      m.rotation.x = -Math.PI / 2;
+      m.renderOrder = 5;
+      debugLabels.add(m);
+    }
+    scene.add(debugLabels);
+  } else if (debugLabels) {
+    scene.remove(debugLabels);
+    debugLabels = null;
+  }
+}
+
+// ---------------- calibration target (toggle) --------------------------------
+let calibTarget = null;
+function setCalibrationTarget(on) {
+  if (on && !calibTarget) {
+    calibTarget = new THREE.Group();
+    const ring = (r, color) => {
+      const m = new THREE.Mesh(new THREE.RingGeometry(r - 0.06, r, 32),
+        new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, depthTest: false }));
+      calibTarget.add(m);
+    };
+    ring(0.5, 0xffffff); ring(0.35, 0xff4444); ring(0.2, 0xffffff); ring(0.08, 0xff4444);
+    const center = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16),
+      new THREE.MeshBasicMaterial({ color: 0xff4444, depthTest: false }));
+    calibTarget.add(center);
+    calibTarget.position.set(0, PLAYER_HEIGHT, -(11));
+    calibTarget.renderOrder = 998;
+    scene.add(calibTarget);
+  } else if (calibTarget) {
+    scene.remove(calibTarget);
+    calibTarget = null;
+  }
+}
+
+// ---------------- respawn -----------------------------------------------------
+function respawn() {
+  player.logical = { x: 0, z: 0 };
+  player.yaw = 0; player.pitch = 0;
+  player.hp = PLAYER_HP; player.alive = true;
+  for (const z of zombies) {
+    z.hp = ZOMBIE_HP; z.alive = true; z.deathT = 0;
+    z.group.rotation.set(0, 0, 0);
+    z.group.position.y = 0;
+    z.barMesh.visible = true;
+    z.group.traverse((o) => { if (o.material && o.material.emissive) o.material.emissive.setScalar(0); });
+    drawHealthBar(z);
+  }
+  zombieA.group.position.copy(l2w(-2.5, 11));
+  zombieB.group.position.copy(l2w(2.5, 11));
+  kills = 0;
+  updateHud();
+}
+renderer.domElement.addEventListener('"'click', () => {
+  if ("'!player.alive) { respawn(); renderer.domElement.requestPointerLock(); }
+});
+
+// ---------------- main loop ---------------------------------------------------
+let lastT = performance.now();
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dt = Math.min((now - lastT) / 1000, 0.05);
+  lastT = now;
+  time += dt;
+
+  updateMovement(dt);
+  updateZombies(dt);
+
+  if (fireCooldown > 0) fireCooldown -= dt;
+  if (firing && fireCooldown <= 0) fire();
+
+  // gun animation
+  recoil = Math.max(0, recoil - dt * 8);
+  const moving = keys['"'KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'];
+  bobT += dt * (moving ? 9 : 3);
+  const bobY = Math.sin(bobT) * (moving ? 0.012 : 0.004);
+  const bobX = Math.cos(bobT * 0.5) * (moving ? 0.008 : 0.003);
+  gunGroup.position.set(0.22 + bobX, -0.22 + bobY - recoil * 0.01, -0.45 + recoil * 0.04);
+  gunGroup.rotation.x = recoil * 0.06;
+  const flash = gunGroup.userData.flash;
+  flash.material.opacity = recoil > 0.6 ? 0.9 : 0;
+  flash.scale.setScalar(recoil > 0.6 ? 0.8 + Math.random() * 0.5 : 0.001);
+
+  if (bannerTimer > 0) {
+    bannerTimer -= dt;
+    if (bannerTimer <= 0) bannerEl.style.opacity = '0';
+  }
+
+  syncCamera();
+  renderer.render(scene, camera);
+
+  // agent state (cheap)
+  window.__AGENT_STATE__ = buildAgentState();
+}
+
+function buildAgentState() {
+  const fwd = cameraForwardWorld();
+  const target = crosshairTarget();
+  const p = l2w(player.logical.x, player.logical.z);
+  return {
+    ready,
+    time,
+    player: {
+      logical: { x: round3(player.logical.x), z: round3(player.logical.z) },
+      world: { x: round3(p.x), y: PLAYER_HEIGHT, z: round3(p.z) },
+      hp: player.hp,
+      alive: player.alive,
+    },
+    camera: {
+      yaw: round4(player.yaw),
+      pitch: round4(player.pitch),
+      forward: { x: round4(fwd.x), y: 0, z: round4(fwd.z) },
+      position: { x: round3(p.x), y: PLAYER_HEIGHT, z: round3(p.z) },
+    },
+    crosshair: target ? {
+      targetId: target.targetId,
+      point: { x: round3(target.point.x), y: round3(target.point.y), z: round3(target.point.z) },
+      dist: round3(target.dist),
+    } : null,
+    lastShot,
+    kills,
+    zombies: zombies.map((z) => ({
+      id: z.id, hp: z.hp, alive: z.alive, moving: z.moving,
+      logical: { x: round3(z.logical.x), z: round3(z.logical.z) },
+      world: { x: round3(z.group.position.x), y: round3(z.group.position.y), z: round3(z.group.position.z) },
+    })),
+    pointerLocked,
+  };
+}
+const round3 = (v) => Math.round(v * 1000) / 1000;
+const round4 = (v) => Math.round(v * 10000) / 10000;
+
+// ---------------- test hooks ---------------------------------------------------
+window.__THREE_GAME_TEST_HOOKS__ = {
+  fire,
+  setYaw(rad) { player.yaw = rad; },
+  setPitch(rad) { player.pitch = rad; },
+  setPlayerPosition(logicalX, logicalZ) {
+    player.logical.x = logicalX; player.logical.z = logicalZ;
+  },
+  setZombiePosition(id, logicalX, logicalZ) {
+    const z = zombies.find((zz) => zz.id === id);
+    z.group.position.copy(l2w(logicalX, logicalZ));
+  },
+  resetZombieHp(id, hp) {
+    const z = zombies.find((zz) => zz.id === id);
+    z.hp = hp; z.alive = hp > 0; z.deathT = 0;
+    z.group.rotation.set(0, 0, 0); z.group.position.y = 0;
+    z.barMesh.visible = true;
+    drawHealthBar(z);
+  },
+  respawn,
+  setDebugLabels,
+  setCalibrationTarget,
+  getState: () => window.__AGENT_STATE__,
+};
+
+updateHud();
+requestAnimationFrame(loop);
+ready = true;
+JS
+echo written; node --input-type=module -e \"import('./three.module.js').then(m=>console.log('three ok', m.REVISION))\" 2>&1 | tail -1" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+written
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+exec
+/bin/zsh -lc "node --input-type=module -e \"import('./three.module.js').then(m=>console.log('three ok', m.REVISION))\" 2>&1 | grep -v Warning; (lsof -iTCP -sTCP:LISTEN -P 2>/dev/null | grep -E '80[0-9][0-9]' | head -5); ls ~/side-projects/games/web/zombie-fps-local-ai/sup-log 2>/dev/null; cat ~/side-projects/games/web/zombie-fps-local-ai/sup-log/* 2>/dev/null | head -20" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+three ok 160
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to ~/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+OrbStack   1050 user   82u  IPv4 0x39043110b2c16119      0t0  TCP *:8055 (LISTEN)
+OrbStack   1050 user   83u  IPv6 0x83ed48081c964d00      0t0  TCP *:8055 (LISTEN)
+Python    23944 user    3u  IPv4 0xb0688415059156a5      0t0  TCP localhost:18095 (LISTEN)
+Python    25147 user    3u  IPv4 0x4d8a75b32cccf3a3      0t0  TCP localhost:18083 (LISTEN)
+Python    30036 user    3u  IPv4 0x95d22fbee3407a7d      0t0  TCP localhost:8090 (LISTEN)
+attempt-01.out
+commands.txt
+preflight.txt
+supervisor.jsonl
+Reading additional input from stdin...
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a05133-f728-7d12-a99c-c0497b0dedc1
+--------
+user
+Before substantive implementation, inspect the installed Skills relevant to this task, read their SKILL.md content, and apply their methods where materially useful.
+
+Priority for this run:
+  1. threejs-qa-release       — deterministic test hooks (__THREE_GAME_TEST_HOOKS__ / __AGENT_STATE__ convention),
+                                automated playtest. Read references/playtest-bot.md. This is how you PROVE things.
+  2. threejs-debug-profiler   — first-person camera/input debugging, transforms, pointer behaviour.
+                                Read references/debug-profile-checklists.md and references/checklists/scene-debugging.md.
+
+codex
+A server is already listening on localhost:8090 — likely serving this folder. Let me verify and open the page.
+
+
+exec
+/bin/zsh -lc "curl -s -o /dev/null -w \"%{http_code} %{url_effective}\\n\" http://127.0.0.1:8090/ ; curl -s http://127.0.0.1:8090/ | head -5; curl -s -o /dev/null -w \"three: %{http_code}\\n\" http://127.0.0.1:8090/three.module.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+200 http://127.0.0.1:8090/
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+three: 404
+
+codex
+The 8090 server serves a different folder. I'll start my own server on a free port.
+
+
+exec
+/bin/zsh -lc "cd ~/side-projects/games/web/zombie-fps-local-ai && (python3 -m http.server 8123 >/tmp/zfps-http.log 2>&1 &) && sleep 1 && curl -s -o /dev/null -w \"index: %{http_code}\\n\" http://127.0.0.1:8123/index.html && curl -s -o /dev/null -w \"three: %{http_code}\\n\" http://127.0.0.1:8123/three.module.js && curl -s -o /dev/null -w \"game: %{http_code}\\n\" http://127.0.0.1:8123/game.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 940ms:
+index: 200
+three: 200
+game: 200
+
+exec
+/bin/zsh -lc 'codex-browser open http://127.0.0.1:8123/index.html && sleep 1.5 && codex-browser state && codex-browser errors' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1516ms:
+{
+  "hook": null,
+  "state": null,
+  "hint": "expose window.__AGENT_STATE__ (an object, or a function returning compact JSON) for `codex-browser state`"
+}
+{
+  "page_errors": []
+}
+
+codex
+The backgrounded server died. Starting it with a persistent session instead.
+
+
+exec
+/bin/zsh -lc 'cd ~/side-projects/games/web/zombie-fps-local-ai && python3 -m http.server 8123' in ~/side-projects/games/web/zombie-fps-local-ai
+exec
+/bin/zsh -lc 'codex-browser open http://127.0.0.1:8123/index.html && sleep 1.5 && codex-browser state && codex-browser errors' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1752ms:
+{
+  "navigated": "http://127.0.0.1:8123/index.html",
+  "url": "http://127.0.0.1:8123/index.html",
+  "title": "Zombie FPS — block prototype"
+}
+{
+  "hook": "__AGENT_STATE__",
+  "state": {
+    "ready": true,
+    "time": 1.1502999999999999,
+    "player": {
+      "logical": {
+        "x": 0,
+        "z": 0
+      },
+      "world": {
+        "x": 0,
+        "y": 1.7,
+        "z": 0
+      },
+      "hp": 100,
+      "alive": true
+    },
+    "camera": {
+      "yaw": 0,
+      "pitch": 0,
+      "forward": {
+        "x": 0,
+        "y": 0,
+        "z": -1
+      },
+      "position": {
+        "x": 0,
+        "y": 1.7,
+        "z": 0
+      }
+    },
+    "crosshair": null,
+    "lastShot": {
+      "hit": false,
+      "targetId": null,
+      "t": 0
+    },
+    "kills": 0,
+    "zombies": [
+      {
+        "id": "A",
+        "hp": 5,
+        "alive": true,
+        "moving": false,
+        "logical": {
+          "x": -2.5,
+          "z": 11
+        },
+        "world": {
+          "x": -2.5,
+          "y": 0,
+          "z": -11
+        }
+      },
+      {
+        "id": "B",
+        "hp": 5,
+        "alive": true,
+        "moving": true,
+        "logical": {
+          "x": 2.271,
+          "z": 9.99
+        },
+        "world": {
+          "x": 2.271,
+          "y": 0.04,
+          "z": -9.99
+        }
+      }
+    ],
+    "pointerLocked": false
+  }
+}
+{
+  "page_errors": []
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"
+(() => {
+  const H = window.__THREE_GAME_TEST_HOOKS__;
+  const out = {};
+  // helper: project a world point to screen NDC using the live camera
+  const camera = document.querySelector('canvas');
+  // we need the actual camera object; expose via a temporary hook
+  const v = new (Object.getPrototypeOf(H.getState().camera.constructor ? Object : Object))();
+  return 'stub';
+})()
+\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "__err": "Object.getPrototypeOf(...) is not a constructor"
+}
+
+codex
+I need to expose the camera object in the test hooks for screen-projection proof. Adding a `__camera` reference and a `projectToScreen` helper.
+tokens used
+42,277
+I need to expose the camera object in the test hooks for screen-projection proof. Adding a `__camera` reference and a `projectToScreen` helper.
+2026-08-30T05:51:37.091059Z ERROR codex_core::session: failed to record rollout items: thread 01a05133-f728-7d12-a99c-c0497b0dedc1 not found

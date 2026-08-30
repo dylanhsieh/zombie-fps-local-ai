@@ -1,0 +1,27 @@
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: high
+reasoning summaries: none
+session id: 01a05166-bc84-7300-877b-1a696ce25258
+--------
+user
+CONTEXT CHECKPOINT — you are about to hand this task off to a FRESH session (to avoid context exhaustion). Write or refresh ./.agent-state/checkpoint.md NOW, concise and machine-usable, with exactly these sections, then STOP (do no other work):
+## TASK — original objective + immutable constraints
+## CURRENT PRODUCT STATE — key files, architecture, current runtime status
+## COMPLETED — milestones already verified
+## UNRESOLVED — concrete current defects + the evidence for them
+## LAST TEST — the command/action you last ran and its result
+## NEXT INTENDED ACTION — the single immediate next step
+## SKILLS — which Skills you loaded and which methods are currently relevant
+## EVIDENCE — important paths / hashes / screenshots
+## DO NOT REPEAT — approaches already disproven
+Write the file and stop.
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+context compacted
+warning: Heads up: Long threads and multiple compactions can cause the model to be less accurate. Start a new thread when possible to keep threads small and targeted.
+warning: Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.

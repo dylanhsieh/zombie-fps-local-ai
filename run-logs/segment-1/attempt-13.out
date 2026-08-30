@@ -1,0 +1,92 @@
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: high
+reasoning summaries: none
+session id: 01a05192-aec3-7cf0-8bd0-2275007c42d5
+--------
+user
+Continue the current task from where you stopped. Execute the next required step now, and keep working until the task's completion criteria are satisfied, or you reach a genuine blocker you cannot resolve yourself (in which case state it explicitly).
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+exec
+/bin/zsh -lc "codex-browser eval \"
+(function(){
+  var H=window.__THREE_GAME_TEST_HOOKS__;
+  // Give A/D a hair of depth (world +Z 0.05 = toward camera) so projection is finite.
+  // logical (x,z) -> world (x, h, -z). To add +0.05 world z, use z = -0.05 logical.
+  var out={};
+  [['A',-1,-0.05],['D',1,-0.05]].forEach(function(d){
+    var p=H.projectLogical(d[1],d[2],0.5);
+    var ndc=p.ndc;
+    var front=ndc.z<1;
+    var horiz=front?(ndc.x<0?'left':(ndc.x>0?'right':'centre')):'behind';
+    out[d[0]]={ndcX:+ndc.x.toFixed(3),ndcZ:+ndc.z.toFixed(3),front:front,horiz:horiz,screenX:Math.round(p.screen.x)};
+  });
+  return out;
+})()
+\" 2>&1" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": {
+    "A": {
+      "ndcX": 17.205,
+      "ndcZ": 3.001,
+      "front": false,
+      "horiz": "behind",
+      "screenX": 11651
+    },
+    "D": {
+      "ndcX": -17.205,
+      "ndcZ": 3.001,
+      "front": false,
+      "horiz": "behind",
+      "screenX": -10371
+    }
+  }
+}
+
+codex
+Now I have finite values but my sign interpretation is off. Let me reason carefully.
+
+`projectLogical(lx, lz, h)` → world (lx, h, **−lz**). So logical z = −0.05 → world z = +0.05 (toward camera, since camera looks toward −Z). Good, that's what I wanted.
+
+For A at logical (−1, −0.05) → world (−1, 0.5, +0.05). ndc.x = **+17.2** (positive). For D at logical (+1, −0.05) → world (+1, 0.5, +0.05). ndc.x = **−17.2** (negative).
+
+Wait — that's the OPPOSITE of what I'd expect. World x=−1 (left in world) gives ndc.x positive (right on screen)? And ndc.z = 3.0 (>1) means "behind." 
+
+The ndc.z=3.0 is because the point is only 0.05 in front of the camera but the near plane is likely at 0.1, so it's actually still behind the near plane → ndc.z > 1. That's why "behind." The huge ndc.x (±17) is the projection blow-up near the near plane.
+
+The sign flip (world −X → ndc +X) is the critical thing to understand. Let me check: is this a real reversal or an artifact of the point being behind the near plane? When a point is behind the near plane (ndc.z>1), the x/y signs are mirrored relative to a properly-in-front point. So I can't trust the sign from a behind-the-near-plane point.
+
+I need the point genuinely in front. The problem: pure lateral (±1, 0) has zero depth. The only way to get a lateral point in front is to also move it forward. But then it's not "pure A." 
+
+The correct, clean approach: **project a point that is forward AND lateral** and compare its screen x to centre — that's exactly what the diagonals WA/WD already did. WA (−1,1) gave ndc.x=−0.86 (left), WD (+1,1) gave +0.86 (right). Those are in front (ndc.z=0.9<1) and correctly signed. That proves: moving in −X (with forward) appears LEFT, +X appears RIGHT. 
+
+For pure A/D, the physically meaningful screen-space fact is: the camera's right vector. Let me prove A/D by projecting two points that are lateral but at a comfortable depth — i.e., lateral offset combined with a forward offset, then I compare the *lateral component*. Actually the diagonals already settle it. But to be rigorous about pure strafe, let me project a point at world (±1, 0.5, −1) (1 unit forward, 1 unit lateral) and read ndc.x sign — that's the same as the diagonal. 
+
+Let me instead directly verify the camera's screen-right direction by projecting the camera's world right vector endpoint, which is the most direct "screen-left/right" proof.
+tokens used
+117,818
+Now I have finite values but my sign interpretation is off. Let me reason carefully.
+
+`projectLogical(lx, lz, h)` → world (lx, h, **−lz**). So logical z = −0.05 → world z = +0.05 (toward camera, since camera looks toward −Z). Good, that's what I wanted.
+
+For A at logical (−1, −0.05) → world (−1, 0.5, +0.05). ndc.x = **+17.2** (positive). For D at logical (+1, −0.05) → world (+1, 0.5, +0.05). ndc.x = **−17.2** (negative).
+
+Wait — that's the OPPOSITE of what I'd expect. World x=−1 (left in world) gives ndc.x positive (right on screen)? And ndc.z = 3.0 (>1) means "behind." 
+
+The ndc.z=3.0 is because the point is only 0.05 in front of the camera but the near plane is likely at 0.1, so it's actually still behind the near plane → ndc.z > 1. That's why "behind." The huge ndc.x (±17) is the projection blow-up near the near plane.
+
+The sign flip (world −X → ndc +X) is the critical thing to understand. Let me check: is this a real reversal or an artifact of the point being behind the near plane? When a point is behind the near plane (ndc.z>1), the x/y signs are mirrored relative to a properly-in-front point. So I can't trust the sign from a behind-the-near-plane point.
+
+I need the point genuinely in front. The problem: pure lateral (±1, 0) has zero depth. The only way to get a lateral point in front is to also move it forward. But then it's not "pure A." 
+
+The correct, clean approach: **project a point that is forward AND lateral** and compare its screen x to centre — that's exactly what the diagonals WA/WD already did. WA (−1,1) gave ndc.x=−0.86 (left), WD (+1,1) gave +0.86 (right). Those are in front (ndc.z=0.9<1) and correctly signed. That proves: moving in −X (with forward) appears LEFT, +X appears RIGHT. 
+
+For pure A/D, the physically meaningful screen-space fact is: the camera's right vector. Let me prove A/D by projecting two points that are lateral but at a comfortable depth — i.e., lateral offset combined with a forward offset, then I compare the *lateral component*. Actually the diagonals already settle it. But to be rigorous about pure strafe, let me project a point at world (±1, 0.5, −1) (1 unit forward, 1 unit lateral) and read ndc.x sign — that's the same as the diagonal. 
+
+Let me instead directly verify the camera's screen-right direction by projecting the camera's world right vector endpoint, which is the most direct "screen-left/right" proof.

@@ -1,0 +1,181 @@
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: high
+reasoning summaries: none
+session id: 01a05192-aec3-7cf0-8bd0-2275007c42d5
+--------
+user
+Continue the current task from where you stopped. Execute the next required step now, and keep working until the task's completion criteria are satisfied, or you reach a genuine blocker you cannot resolve yourself (in which case state it explicitly).
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+exec
+/bin/zsh -lc "sleep 0.3
+codex-browser eval \"
+(function(){
+  var H=window.__THREE_GAME_TEST_HOOKS__;
+  var cam=H.getCamera();
+  var fwd=cam.getWorldDirection?cam.getWorldDirection(new cam.position.constructor(0,0,0)):{x:cam.matrixWorld.elements[8],y:cam.matrixWorld.elements[9],z:cam.matrixWorld.elements[10]};
+  var dirs=[[0,1,'W'],[0,-1,'S'],[-1,0,'A'],[1,0,'D'],[-1,1,'WA'],[1,1,'WD'],[-1,-1,'SA'],[1,-1,'SD']];
+  var out={camFwdWorld:{x:+fwd.x.toFixed(3),y:+fwd.y.toFixed(3),z:+fwd.z.toFixed(3)},dirs:{}};
+  dirs.forEach(function(d){
+    var p=H.projectLogical(d[0],d[1],0.5);
+    var ndc=p.ndc;
+    var front=ndc.z<1;
+    var horiz=front?(ndc.x<0?'left':(ndc.x>0?'right':'centre')):'behind';
+    out.dirs[d[2]]={ndcX:+ndc.x.toFixed(3),ndcY:+ndc.y.toFixed(3),ndcZ:+ndc.z.toFixed(3),front:front,horiz:horiz,screenX:Math.round(p.screen.x),screenY:Math.round(p.screen.y)};
+  });
+  return out;
+})()
+\" 2>&1 | tail -40" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 258ms:
+      },
+      "WA": {
+        "ndcX": -0.86,
+        "ndcY": -1.652,
+        "ndcZ": 0.9,
+        "front": true,
+        "horiz": "left",
+        "screenX": 89,
+        "screenY": 1061
+      },
+      "WD": {
+        "ndcX": 0.86,
+        "ndcY": -1.652,
+        "ndcZ": 0.9,
+        "front": true,
+        "horiz": "right",
+        "screenX": 1191,
+        "screenY": 1061
+      },
+      "SA": {
+        "ndcX": 0.86,
+        "ndcY": 1.652,
+        "ndcZ": 1.101,
+        "front": false,
+        "horiz": "behind",
+        "screenX": 1191,
+        "screenY": -261
+      },
+      "SD": {
+        "ndcX": -0.86,
+        "ndcY": 1.652,
+        "ndcZ": 1.101,
+        "front": false,
+        "horiz": "behind",
+        "screenX": 89,
+        "screenY": -261
+      }
+    }
+  }
+}
+
+codex
+The output got truncated (only showed WA/WD/SA/SD). Let me re-run and capture the full result including camFwd and the W/S/A/D base directions.
+
+
+exec
+/bin/zsh -lc "codex-browser eval \"
+(function(){
+  var H=window.__THREE_GAME_TEST_HOOKS__;
+  var cam=H.getCamera();
+  var fwd=cam.getWorldDirection?cam.getWorldDirection(new cam.position.constructor(0,0,0)):{x:cam.matrixWorld.elements[8],y:cam.matrixWorld.elements[9],z:cam.matrixWorld.elements[10]};
+  var dirs=[[0,1,'W'],[0,-1,'S'],[-1,0,'A'],[1,0,'D']];
+  var out={camFwdWorld:{x:+fwd.x.toFixed(3),y:+fwd.y.toFixed(3),z:+fwd.z.toFixed(3)},dirs:{}};
+  dirs.forEach(function(d){
+    var p=H.projectLogical(d[0],d[1],0.5);
+    var ndc=p.ndc;
+    var front=ndc.z<1;
+    var horiz=front?(ndc.x<0?'left':(ndc.x>0?'right':'centre')):'behind';
+    out.dirs[d[2]]={ndcX:+ndc.x.toFixed(3),ndcZ:+ndc.z.toFixed(3),front:front,horiz:horiz};
+  });
+  return out;
+})()
+\" 2>&1" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": {
+    "camFwdWorld": {
+      "x": 0,
+      "y": 0,
+      "z": -1
+    },
+    "dirs": {
+      "W": {
+        "ndcX": 0,
+        "ndcZ": 0.9,
+        "front": true,
+        "horiz": "centre"
+      },
+      "S": {
+        "ndcX": 0,
+        "ndcZ": 1.101,
+        "front": false,
+        "horiz": "behind"
+      },
+      "A": {
+        "ndcX": null,
+        "ndcZ": null,
+        "front": true,
+        "horiz": "left"
+      },
+      "D": {
+        "ndcX": null,
+        "ndcZ": null,
+        "front": true,
+        "horiz": "right"
+      }
+    }
+  }
+}
+
+codex
+The A/D base directions show `ndcX: null` — that's the classic projection of a point exactly on the camera's side axis (the point lies in the near-plane plane, so `project()` gives a degenerate division). The diagonals WA/WD worked fine (ndcX ±0.86). Let me confirm A/D by projecting at a slightly larger radius (e.g. 1.0 → use (±1,0) at h=0.5 but push to (±2,0)) to avoid the degenerate side point.
+
+
+exec
+/bin/zsh -lc "codex-browser eval \"
+(function(){
+  var H=window.__THREE_GAME_TEST_HOOKS__;
+  // Project A/D at radius 2 to avoid the degenerate side-on near-plane point
+  var out={};
+  [['A',-2,0],['D',2,0]].forEach(function(d){
+    var p=H.projectLogical(d[1],d[2],0.5);
+    var ndc=p.ndc;
+    var front=ndc.z<1;
+    var horiz=front?(ndc.x<0?'left':(ndc.x>0?'right':'centre')):'behind';
+    out[d[0]]={ndcX:+ndc.x.toFixed(3),ndcZ:+ndc.z.toFixed(3),front:front,horiz:horiz};
+  });
+  return out;
+})()
+\" 2>&1" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": {
+    "A": {
+      "ndcX": null,
+      "ndcZ": null,
+      "front": true,
+      "horiz": "left"
+    },
+    "D": {
+      "ndcX": null,
+      "ndcZ": null,
+      "front": true,
+      "horiz": "right"
+    }
+  }
+}
+
+codex
+Still null at radius 2. The `horiz` computed as left/right is from my own sign logic on `ndc.x` — but `ndc.x` is null, so my `ndc.x<0` is false and `ndc.x>0` is false... wait, it says "left" for A and "right" for D. That means `ndc.x` is NOT null in the comparison but `+ndc.x.toFixed(3)` produced null? That's odd. Let me check — actually `null.toFixed` would throw. So `ndc.x` must be a number but `+ndc.x.toFixed(3)` returned... no. Let me look: the `horiz` uses `ndc.x<0` / `ndc.x>0` and got left/right correctly, so `ndc.x` IS a real number. But the reported `ndcX` is null. 
+
+The issue: `+ndc.x.toFixed(3)` — if `ndc.x` is a very small number like `1e-17`, `.toFixed(3)` = "0.000", `+` = 0, not null. So why null? Let me just dump the raw ndc values without formatting.
+tokens used
+115,557
+Still null at radius 2. The `horiz` computed as left/right is from my own sign logic on `ndc.x` — but `ndc.x` is null, so my `ndc.x<0` is false and `ndc.x>0` is false... wait, it says "left" for A and "right" for D. That means `ndc.x` is NOT null in the comparison but `+ndc.x.toFixed(3)` produced null? That's odd. Let me check — actually `null.toFixed` would throw. So `ndc.x` must be a number but `+ndc.x.toFixed(3)` returned... no. Let me look: the `horiz` uses `ndc.x<0` / `ndc.x>0` and got left/right correctly, so `ndc.x` IS a real number. But the reported `ndcX` is null. 
+
+The issue: `+ndc.x.toFixed(3)` — if `ndc.x` is a very small number like `1e-17`, `.toFixed(3)` = "0.000", `+` = 0, not null. So why null? Let me just dump the raw ndc values without formatting.

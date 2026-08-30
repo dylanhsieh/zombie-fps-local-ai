@@ -1,0 +1,362 @@
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: high
+reasoning summaries: none
+session id: 01a051a9-a2b6-7242-b1b6-7b7edc788335
+--------
+user
+USER PLAYTEST FEEDBACK
+
+"The game is already playable.
+
+However, the mouse X-axis appears to be reversed.
+
+When I move the mouse to the right, the camera/view turns in the opposite horizontal direction.
+
+Please correct the horizontal mouse-look direction so that:
+- moving the mouse right turns the view right;
+- moving the mouse left turns the view left.
+
+Do not change unrelated controls or gameplay unless necessary for this correction."
+
+After making the correction, verify it and finish normally, then update REPORT.md.
+
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+warning: Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+codex
+The player reports mouse X is reversed. Let me look at the mouse-look code before changing anything.
+
+
+exec
+/bin/zsh -lc "grep -n \"movementX\\|mousemove\\|yaw\" game.js | head -30" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+139:  yaw: 0,                         // 0 => looking toward logical +Y (world -Z)
+154:  // yaw=0 -> (0,0,-1); right turn (mouse right) increases yaw -> toward +X
+155:  const cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+159:  const cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+166:  camera.rotateY(-player.yaw);
+180:document.addEventListener('mousemove', (e) => {
+182:  player.yaw -= e.movementX * MOUSE_SENS;   // mouse right -> turn right -> yaw-
+201:  const fwd = cameraForwardWorld();   // horizontal by construction (yaw only)
+304:  // collision proxies: torso + head boxes (group-local AABBs; group is only yaw-rotated)
+576:  player.yaw = 0; player.pitch = 0;
+647:      yaw: round4(player.yaw),
+695:  setYaw(rad) { player.yaw = rad; },
+
+exec
+/bin/zsh -lc 'sed -n 135,215p game.js' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+
+// ---------------- player state ---------------------------------------------
+const player = {
+  logical: { x: 0, z: 0 },        // spawn at logical (0,0)
+  yaw: 0,                         // 0 => looking toward logical +Y (world -Z)
+  pitch: 0,
+  hp: PLAYER_HP,
+  alive: true,
+};
+const keys = Object.create(null);
+let pointerLocked = false;
+let firing = false;
+let fireCooldown = 0;
+let lastShot = { hit: false, targetId: null, t: 0 };
+let kills = 0;
+let ready = false;
+let time = 0;
+
+function cameraForwardWorld() {
+  // yaw=0 -> (0,0,-1); right turn (mouse right) increases yaw -> toward +X
+  const cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+  return new THREE.Vector3(sy, 0, -cy);
+}
+function cameraRightWorld() {
+  const cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+  return new THREE.Vector3(cy, 0, sy);
+}
+function syncCamera() {
+  const p = l2w(player.logical.x, player.logical.z);
+  camera.position.set(p.x, PLAYER_HEIGHT, p.z);
+  camera.quaternion.identity();
+  camera.rotateY(-player.yaw);
+  camera.rotateX(player.pitch);
+}
+
+// ---------------- input -----------------------------------------------------
+const startEl = document.getElementById('start');
+document.getElementById('playBtn').addEventListener('click', () => {
+  renderer.domElement.requestPointerLock();
+});
+document.addEventListener('pointerlockchange', () => {
+  pointerLocked = document.pointerLockElement === renderer.domElement;
+  startEl.classList.toggle('hidden', pointerLocked);
+  if (!pointerLocked) { firing = false; for (const k in keys) keys[k] = false; }
+});
+document.addEventListener('mousemove', (e) => {
+  if (!pointerLocked) return;
+  player.yaw -= e.movementX * MOUSE_SENS;   // mouse right -> turn right -> yaw-
+  player.pitch -= e.movementY * MOUSE_SENS; // mouse up -> pitch+ (look up)
+  player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch));
+});
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyW' || e.code === 'KeyA' || e.code === 'KeyS' || e.code === 'KeyD') {
+    keys[e.code] = true; e.preventDefault();
+  }
+});
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+renderer.domElement.addEventListener('mousedown', (e) => {
+  if (e.button === 0 && pointerLocked) firing = true;
+});
+window.addEventListener('mouseup', (e) => { if (e.button === 0) firing = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; firing = false; });
+
+// ---------------- movement --------------------------------------------------
+function updateMovement(dt) {
+  if (!player.alive) return;
+  const fwd = cameraForwardWorld();   // horizontal by construction (yaw only)
+  const right = cameraRightWorld();
+  let mx = 0, mz = 0;
+  if (keys['KeyW']) { mx += fwd.x; mz += fwd.z; }
+  if (keys['KeyS']) { mx -= fwd.x; mz -= fwd.z; }
+  if (keys['KeyA']) { mx -= right.x; mz -= right.z; }
+  if (keys['KeyD']) { mx += right.x; mz += right.z; }
+  const len = Math.hypot(mx, mz);
+  if (len > 0) {
+    mx /= len; mz /= len;
+    const p = l2w(player.logical.x, player.logical.z);
+    p.x += mx * PLAYER_SPEED * dt;
+    p.z += mz * PLAYER_SPEED * dt;
+    const lim = ROOM_HALF - 0.6;
+    p.x = Math.max(-lim, Math.min(lim, p.x));
+
+codex
+Let me check the movement section and the `l2w` mapping to fully map the coordinate conventions before changing anything.
+
+
+exec
+/bin/zsh -lc 'sed -n 1,44p game.js; echo ---; sed -n 215,240p game.js' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+import * as THREE from './three.module.js';
+
+// ---------------------------------------------------------------------------
+// Coordinate convention (world):
+//   logical (x, y) -> world (x, 0, -y)   [logical +Y = world -Z]
+//   logical z (height) -> world +Y
+// Spawn: player at logical (0,0), looking toward logical +Y (world -Z).
+// Screen projection (Three.js standard): for a camera looking along world -Z,
+//   world +X projects to screen RIGHT, world -Z projects to screen UP/forward.
+// So: W -> world -Z (forward), S -> +Z (back), A -> -X (screen left), D -> +X (screen right).
+// This is PROVEN via screen-space projection in the verification phase, not assumed.
+// ---------------------------------------------------------------------------
+
+const ROOM_HALF = 14;            // room spans logical x,z in [-14, 14]
+const WALL_H = 5;
+const PLAYER_HEIGHT = 1.7;
+const PLAYER_SPEED = 6.0;        // logical units / s
+const MOUSE_SENS = 0.0022;
+const FIRE_INTERVAL = 0.09;      // s between shots (rapid)
+const ZOMBIE_HP = 5;
+const ZOMBIE_B_SPEED = 0.9;      // slow approach
+const ZOMBIE_MIN_DIST = 2.2;     // stops when close
+const PLAYER_HP = 100;
+const ZOMBIE_ATTACK_RANGE = 1.6;
+const ZOMBIE_ATTACK_DPS = 12;
+
+const l2w = (x, z) => new THREE.Vector3(x, 0, -z);
+const w2l = (p) => ({ x: p.x, z: -p.z });
+
+// ---------------- renderer / scene / camera -------------------------------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.getElementById('app').appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b100d);
+scene.fog = new THREE.Fog(0x0b100d, 24, 46);
+
+---
+    p.x = Math.max(-lim, Math.min(lim, p.x));
+    p.z = Math.max(-lim, Math.min(lim, p.z));
+    player.logical.x = p.x;
+    player.logical.z = -p.z;
+  }
+}
+
+// ---------------- zombies ---------------------------------------------------
+function makeZombieMaterialSet(id) {
+  const skin = id === 'A' ? 0x5e7d4a : 0x6d5a4e;
+  const shirt = id === 'A' ? 0x44503c : 0x4a3a34;
+  const pants = 0x2e2a26;
+  const eye = 0xffb347;
+  return {
+    skin: new THREE.MeshStandardMaterial({ color: skin, roughness: 0.85 }),
+    shirt: new THREE.MeshStandardMaterial({ color: shirt, roughness: 0.9 }),
+    pants: new THREE.MeshStandardMaterial({ color: pants, roughness: 0.95 }),
+    eye: new THREE.MeshBasicMaterial({ color: eye }),
+  };
+}
+
+function buildZombie(id) {
+  const mats = makeZombieMaterialSet(id);
+  const g = new THREE.Group();
+  const box = (w, h, d, m, x, y, z, ry = 0) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+
+codex
+Now I've verified the full chain. Let me trace the math precisely:
+
+- `syncCamera()`: `camera.rotateY(-player.yaw)` — and `cameraForwardWorld()` = `(sin yaw, 0, -cos yaw)`. At yaw=+90° the camera looks toward world +X, so **positive yaw = turning toward screen-right**.
+- Input line 182: `player.yaw -= e.movementX * SENS` — mouse right (movementX>0) **decreases** yaw → turns toward screen-left. That's the inversion.
+
+Pitch line 183 is correct (mouse up → look up), so only X needs flipping. Applying the minimal fix:
+
+
+exec
+/bin/zsh -lc "python3 - <<'EOF'
+import re
+s = open('game.js').read()
+old = \"  player.yaw -= e.movementX * MOUSE_SENS;   // mouse right -> turn right -> yaw-\"
+new = \"  player.yaw += e.movementX * MOUSE_SENS;   // mouse right -> turn right -> yaw+ (camera.rotateY(-yaw): +yaw = screen-right)\"
+assert s.count(old) == 1
+open('game.js','w').write(s.replace(old, new))
+print(\"patched\")
+EOF" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+patched
+
+codex
+Now verifying on the live page: reload, then simulate a real mousemove with pointer lock bypassed, and prove via screen projection that the view turned right.
+
+
+exec
+/bin/zsh -lc "codex-browser reload && sleep 1.5 && codex-browser eval \"
+var H = window.__THREE_GAME_TEST_HOOKS__;
+var cam = H.getCamera();
+var before = JSON.stringify(H.projectLogical(0, 10, 1.7));
+// simulate the real input path: pointer-lock-gated mousemove handler
+var ev = new MouseEvent('mousemove', { movementX: 400, movementY: 0, bubbles: true });
+Object.defineProperty(ev, 'movementX', { value: 400 });
+document.dispatchEvent(ev);
+// re-enable the lock-gate for the test by faking pointerLocked via the state hook is not possible; instead call the handler's effect directly is wrong — instead check: handler requires pointerLocked. Set it via internal? Not exposed. So verify via dispatch after faking document.pointerLockElement:
+JSON.stringify({before: before, dispatched: true})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1745ms:
+{
+  "url": "http://127.0.0.1:8802/"
+}
+{
+  "value": "{\"before\":\"{\\\"ndc\\\":{\\\"x\\\":0,\\\"y\\\":0,\\\"z\\\":0.9904976244061017},\\\"screen\\\":{\\\"x\\\":640,\\\"y\\\":400},\\\"onScreen\\\":true}\",\"dispatched\":true}"
+}
+
+codex
+The handler is gated by `pointerLocked`, which can't be set headlessly. Let me check how the state hook exposes pointerLocked — I may be able to fake `document.pointerLockElement` to drive the real handler.
+
+
+exec
+/bin/zsh -lc 'sed -n 640,700p game.js' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+    player: {
+      logical: { x: round3(player.logical.x), z: round3(player.logical.z) },
+      world: { x: round3(p.x), y: PLAYER_HEIGHT, z: round3(p.z) },
+      hp: player.hp,
+      alive: player.alive,
+    },
+    camera: {
+      yaw: round4(player.yaw),
+      pitch: round4(player.pitch),
+      forward: { x: round4(fwd.x), y: 0, z: round4(fwd.z) },
+      position: { x: round3(p.x), y: PLAYER_HEIGHT, z: round3(p.z) },
+    },
+    crosshair: target ? {
+      targetId: target.targetId,
+      point: { x: round3(target.point.x), y: round3(target.point.y), z: round3(target.point.z) },
+      dist: round3(target.dist),
+    } : null,
+    lastShot,
+    kills,
+    zombies: zombies.map((z) => ({
+      id: z.id, hp: z.hp, alive: z.alive, moving: z.moving,
+      logical: { x: round3(z.logical.x), z: round3(z.logical.z) },
+      world: { x: round3(z.group.position.x), y: round3(z.group.position.y), z: round3(z.group.position.z) },
+    })),
+    pointerLocked,
+  };
+}
+const round3 = (v) => Math.round(v * 1000) / 1000;
+const round4 = (v) => Math.round(v * 10000) / 10000;
+
+// ---------------- test hooks ---------------------------------------------------
+// ---------------- screen-projection test helpers -------------------------
+// RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+// projecting world points through the LIVE camera into NDC / screen space.
+function projectToScreen(wx, wy, wz) {
+  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
+  // set every frame by syncCamera(); recomputing it from the stale local
+  // matrix would clobber the live transform (and corrupt the next frame's
+  // aim ray). Project against the matrixWorld as it stands.
+  const v = new THREE.Vector3(wx, wy, wz);
+  const ndc = v.clone().project(camera);
+  const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+  return {
+    ndc: { x: ndc.x, y: ndc.y, z: ndc.z },
+    screen: { x: (ndc.x * 0.5 + 0.5) * window.innerWidth, y: (-ndc.y * 0.5 + 0.5) * window.innerHeight },
+    onScreen,
+  };
+}
+// convenience: project a logical (x,z) floor point at a given height
+function projectLogical(lx, lz, h = 0.5) {
+  return projectToScreen(lx, h, -lz);
+}
+
+window.__THREE_GAME_TEST_HOOKS__ = {
+  fire,
+  setYaw(rad) { player.yaw = rad; },
+  setPitch(rad) { player.pitch = rad; },
+  setPlayerPosition(logicalX, logicalZ) {
+    player.logical.x = logicalX; player.logical.z = logicalZ;
+  },
+  setZombiePosition(id, logicalX, logicalZ) {
+
+exec
+/bin/zsh -lc "codex-browser eval \"
+var H = window.__THREE_GAME_TEST_HOOKS__;
+// fake pointer lock so the real mousemove handler runs
+var fakeEl = document.createElement('div');
+Object.defineProperty(document, 'pointerLockElement', { get: function(){ return fakeEl; }, configurable: true });
+H.setYaw(0); H.setPitch(0); H.setPlayerPosition(0,0);
+'setup-done'\" && sleep 0.5 && codex-browser eval \"
+var H = window.__THREE_GAME_TEST_HOOKS__;
+var before = H.projectLogical(0, 10, 1.7);
+var ev = new MouseEvent('mousemove', { bubbles: true });
+Object.defineProperty(ev, 'movementX', { value: 400 });
+Object.defineProperty(ev, 'movementY', { value: 0 });
+document.dispatchEvent(ev);
+JSON.stringify({before: before, yawAfter: window.__AGENT_STATE__.camera.yaw})\" && sleep 0.5 && codex-browser eval \"
+var H = window.__THREE_GAME_TEST_HOOKS__;
+JSON.stringify({
+  after: H.projectLogical(0, 10, 1.7),
+  yaw: window.__AGENT_STATE__.camera.yaw,
+  fwd: window.__AGENT_STATE__.camera.forward
+})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1065ms:
+{
+  "value": "{\"before\":{\"ndc\":{\"x\":0,\"y\":0,\"z\":0.9904976244061017},\"screen\":{\"x\":640,\"y\":400},\"onScreen\":true},\"yawAfter\":0}"
+}
+{
+  "value": "{\"after\":{\"ndc\":{\"x\":0,\"y\":0,\"z\":0.9904976244061017},\"screen\":{\"x\":640,\"y\":400},\"onScreen\":true},\"yaw\":0,\"fwd\":{\"x\":0,\"y\":0,\"z\":-1}}"
+}
+
+codex
+The fake lock didn't stick. Let me debug whether the handler sees pointerLocked at all.
+tokens used
+38,728
+The fake lock didn't stick. Let me debug whether the handler sees pointerLocked at all.

@@ -1,0 +1,240 @@
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: high
+reasoning summaries: none
+session id: 01a051a9-a2b6-7242-b1b6-7b7edc788335
+--------
+user
+Continue the current task from where you stopped. Execute the next required step now, and keep working until the task's completion criteria are satisfied, or you reach a genuine blocker you cannot resolve yourself (in which case state it explicitly).
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+exec
+/bin/zsh -lc "codex-browser eval \"
+var H = window.__THREE_GAME_TEST_HOOKS__;
+H.setYaw(0); H.setPitch(0); H.setPlayerPosition(0,0);
+'ok'\" && sleep 0.4 && codex-browser eval \"
+var H = window.__THREE_GAME_TEST_HOOKS__;
+var before = H.projectLogical(0, 10, 1.7);
+var ev = new MouseEvent('mousemove', { bubbles: true });
+Object.defineProperty(ev, 'movementX', { value: 400 });
+Object.defineProperty(ev, 'movementY', { value: 0 });
+document.dispatchEvent(ev);
+JSON.stringify({before: before, yawAfter: window.__AGENT_STATE__.camera.yaw})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 404ms:
+{
+  "value": "{\"before\":{\"ndc\":{\"x\":0,\"y\":0,\"z\":0.9904976244061017},\"screen\":{\"x\":640,\"y\":400},\"onScreen\":true},\"yawAfter\":0}"
+}
+
+warning: Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+context compacted
+warning: Heads up: Long threads and multiple compactions can cause the model to be less accurate. Start a new thread when possible to keep threads small and targeted.
+codex
+I'll pick up from the checkpoint: verify the mouse-X fix via screen projection, re-run key regression checks, then write REPORT.md. Let me first re-read the checkpoint and the current mouse-look code.
+
+
+exec
+/bin/zsh -lc "cat ./.agent-state/checkpoint.md 2>/dev/null | tail -60; echo \"=====MOUSE CODE=====\"; grep -n \"movementX\\|movementY\\|pointerLocked\\|pointerlockchange\\|MOUSE_SENS\" game.js | head -40" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+- Hooks: `window.__AGENT_STATE__` (player logical+world, camera yaw/pitch/forward/position, crosshair {targetId,point,dist}, lastShot {hit,targetId,hpAfter,t}, kills, zombies[] {id,hp,alive,moving,logical,world}, ready, pointerLocked). `window.__THREE_GAME_TEST_HOOKS__` = `H`: fire, setYaw(rad), setPitch(rad), setPlayerPosition(lx,lz), setZombiePosition(id,lx,lz), resetZombieHp(id,hp), respawn, setDebugLabels, setCalibrationTarget(bool), getState, getCamera, projectToScreen(wx,wy,wz), projectLogical(lx,lz,h=0.5), holdKey(code), releaseKey(code), releaseAllKeys.
+- `fire()` gate: `if(!player.alive||!ready) return; if(fireCooldown>0) return;` — cooldown ~0.09s. Always wait >=0.25s between manual fire() calls in test sequences.
+- Zombie B stops moving at dist<=2.2 from player (moving=false after that).
+
+## COMPLETED (mechanically verified via codex-browser eval vs live page)
+1. **Spawn orientation (RULE ZERO screen-projection proof)** — spawn (0,0), yaw=0, pitch=0, camera fwd world (0,0,-1)=logical +Y:
+   - W (0,1): ndc.z=0.9<1, ndc.x=0 -> front/centre ✓
+   - S (0,-1): ndc.z=1.101>1 -> behind ✓
+   - A (-1,0) & D (1,0): pure-lateral points are in the near-plane -> project() yields NaN (expected math, NOT a bug). Proven via forward+diagonal points instead: diagForwardLeft ndc.x=-0.86 (screen left, sx=89), diagForwardRight ndc.x=+0.86 (screen right, sx=1191); camera rightWorld=(1,0,0). -> A=left, D=right ✓
+   - Diagonals: WA(-1,1) ndc.x=-0.86 left-front; WD(1,1) +0.86 right-front; SA/SD ndc.z=1.101 behind ✓
+   - **All 8 directions correct.**
+2. **Camera-relative movement** (holdKey + ~0.5s sleep + read `__AGENT_STATE__.player.logical`):
+   - yaw=0: W (0,+4.299), S (0,-4.298), A (-4.298,0), D (+3.999,0) ✓
+   - yaw=+90deg: W (+4.099,0), A (0,+4.398), D (0,-4.199) ✓
+   - yaw=-90deg: W (-3.999,0), A (0,-4.1), D (0,+4.499) ✓
+   - pitch=0.9 + W: playerY stays 1.7 (no vertical drift), moved z=+3.499 ✓
+3. **Crosshair DOM centre** = (640,400) = exact viewport centre (1280x800) ✓
+4. **Calibration ray agreement**: projectLogical(0,11,1.7) -> ndc(0,0), screen(640,400) = crosshair centre ✓
+5. **Core aim (crosshair->hit) works in fixed build** (re-confirmed THIS session): respawn, setZombiePosition('A',0,11), yaw=0/pitch=0, player (0,0) -> crosshair {targetId:'A', point (0,1.7,-10.79), dist 10.79} ✓
+6. **Near-miss (crosshair->no-hit) re-confirmed THIS session**: A at logical (1,11), yaw=0/pitch=0 -> crosshair=null, lastShot {hit:false,targetId:null} ✓ (A off-centre is NOT hit by centre ray)
+7. **Zombie A 5-hit kill (verified last session)**: respawn, A at (0,11), yaw/pitch 0, player (0,0). Crosshair target='A'. Fired 5x (0.25s gaps): hp 5->4->3->2->1->0, alive:false on the 5th hit. lastShot each time {hit:true,targetId:'A',hpAfter:...}. -> dies exactly on 5th valid hit (not 4th, not 6th) ✓ BLOCKING DEFECT #5 ABSENT.
+8. **projectToScreen root-cause fix** (game.js ~line 674): previously called camera.updateMatrixWorld(), which recomputed matrixWorld from the stale local matrix and clobbered the live camera transform (set each frame by syncCamera()), corrupting the next frame's aim ray -> phantom "crosshairTarget() returns null". Fix: removed that call; now projects against live camera.matrixWorld. Confirmed in place this session.
+
+## UNRESOLVED
+None blocking. Remaining work is FINALIZATION only:
+- Zombie B 5-hit kill sequence (not yet run in the fixed build).
+- Confirm dead zombie A is no longer targetable (crosshair null / fire miss after A dead).
+- Screenshots (2): both zombies + health bars + crosshair at centre; optional mid-kill reduced bar / hit flash.
+- Write REPORT.md.
+
+## LAST TEST
+Near-miss re-confirm: `H.setZombiePosition('A',1,11); H.setYaw(0); H.setPitch(0);` then read `__AGENT_STATE__` -> crosshair=null, lastShot {hit:false,targetId:null}. PASS (off-centre A not hit by centre ray). Immediately prior, A at (0,11) gave crosshair targetId='A'. Both confirm crosshair-to-hit alignment + near-miss in the fixed build.
+
+## NEXT INTENDED ACTION
+1. **Zombie B 5-hit kill**: respawn -> `H.setZombiePosition('B',0,11)` (B walks, so place at centre) -> `H.setYaw(0); H.setPitch(0); H.setPlayerPosition(0,0)` -> wait >=1 frame -> confirm crosshair targetId='B' -> fire 5x with >=0.25s gaps (shell `sleep 0.3` between codex-browser eval fire() calls) -> read `__AGENT_STATE__` after each: expect hp 5->4->3->2->1->0, alive:false on 5th, kills increments.
+2. **Dead-A-not-targetable**: with A dead (hp 0) at (0,11) and B elsewhere, confirm crosshair does NOT return 'A' and fire() -> hit:false for A. (Simplest: after B-kill test, respawn, kill A to 0 via 5 fires, then move B away, aim at (0,11) -> crosshair null.)
+3. **Screenshots**: hide overlay `document.getElementById('start').style.display='none'` (pointer-lock can't engage headless; pointerLocked=false is fine, logic still runs). respawn so both alive. Shot 1: both zombies + health bars + crosshair at centre -> `codex-browser screenshot /tmp/shot-1.png`. Shot 2 (optional): mid-kill showing reduced bar / hit flash -> `/tmp/shot-2.png`. `codex-browser screenshot` prints path+sha256+bytes.
+4. **Update this checkpoint** with the B-kill numbers + screenshot hashes.
+5. **Write REPORT.md** with evidence split into mechanically verified (all numbers above + orientation table + both 5-hit sequences + near-miss), visually inspected (screenshots), human-only (real pointer-lock/mouse-look feel — cannot automate). Include the screen-projection proof table and the two 5-hit sequences.
+6. **Stop.**
+
+## SKILLS
+Loaded (relevant): threejs-qa-release (test hooks __THREE_GAME_TEST_HOOKS__ / __AGENT_STATE__ convention, references/playtest-bot.md — automated playtest). threejs-debug-profiler (camera/input/transform debugging, references/debug-profile-checklists.md, references/checklists/scene-debugging.md). threejs-gameplay-systems (FPS controls, camera-relative movement, raycast/hit detection, update order, references/gameplay-workflows.md). threejs-game-ui-designer (crosshair/health bar). threejs-aaa-graphics-builder (block visuals). game-engine/game-developer (references/3d-web-games.md). threejs-game-director not needed.
+
+## EVIDENCE
+- Served: http://127.0.0.1:8802/ (index.html). curl 200.
+- Screenshots: none yet (need to hide start overlay, then codex-browser screenshot to /tmp).
+- Key verified numbers in COMPLETED section are the evidence base for REPORT.md.
+- No screenshot hashes committed yet.
+
+## DO NOT REPEAT
+- Do NOT accept internal consistency (HUD/labels/transform agreeing) as proof of orientation — must use screen-space projection (ndc signs / projected screen coords).
+- Do NOT reference THREE in codex-browser eval (not a global).
+- Do NOT read/copy code from other projects (clean room).
+- codex-browser eval does NOT await Promises/async — (async()=>{...})() returns {}. Use synchronous calls + shell `sleep` between separate codex-browser invocations so the rAF loop advances >=1 frame (camera re-syncs each frame). The old setInterval step-driver pattern was UNRELIABLE (callbacks never fired) — avoid it.
+- Camera re-syncs only on the next animation frame after setYaw/setPlayerPosition/setZombiePosition — always wait >=1 frame (shell sleep ~0.3-1s) before reading __AGENT_STATE__ or firing.
+- Pure-lateral projection is NaN (point in near-plane) — expected math, NOT a bug; prove A/D via forward+diagonal points or the camera right vector.
+- Never call camera.updateMatrixWorld() (or any transform recompute) from eval-side helpers between frames — it clobbers the live camera transform set by syncCamera() each frame.
+- Pointer lock can't be engaged headlessly; hide #start to screenshot in-game view.
+- fire() within the ~0.09s cooldown window is a no-op — always wait >=0.25s between fire() calls in test sequences.
+=====MOUSE CODE=====
+18:const MOUSE_SENS = 0.0022;
+145:let pointerLocked = false;
+175:document.addEventListener('pointerlockchange', () => {
+176:  pointerLocked = document.pointerLockElement === renderer.domElement;
+177:  startEl.classList.toggle('hidden', pointerLocked);
+178:  if (!pointerLocked) { firing = false; for (const k in keys) keys[k] = false; }
+181:  if (!pointerLocked) return;
+182:  player.yaw += e.movementX * MOUSE_SENS;   // mouse right -> turn right -> yaw+ (camera.rotateY(-yaw): +yaw = screen-right)
+183:  player.pitch -= e.movementY * MOUSE_SENS; // mouse up -> pitch+ (look up)
+193:  if (e.button === 0 && pointerLocked) firing = true;
+664:    pointerLocked,
+
+codex
+The fix is in place at line 182. Now let me check the server is up and run the mouse-X verification via codex-browser.
+
+
+exec
+/bin/zsh -lc "curl -s -o /dev/null -w \"%{http_code}\\n\" http://127.0.0.1:8802/ ; echo \"---\"; codex-browser help 2>&1 | head -30" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+200
+---
+codex-browser — drive the sandbox-external browser. Output is bounded (large results saved to disk).
+COMMANDS
+  open <url>              load a page (e.g. open http://127.0.0.1:PORT/)
+  url | title             current url / page title
+  state                   compact JSON from the app's diagnostics hook (window.__AGENT_STATE__)
+  eval <js...>            run a JS expression in the page → bounded JSON   (e.g. eval document.title)
+  get <path>              read window.<path>; dots ok  (e.g. get __AGENT_STATE__.player.x)
+  click-id <id>           click #<id>       |  click <sel>   |  type <sel> <text>
+  key <k> | press <k>     one key press (e.g. key f)         |  hold <k> <ms>  (held movement)
+  screenshot [file]       save PNG to file; prints path + sha256 + bytes
+  snapshot                a11y + visible text + controls (bounded)
+  console | errors | network-errors     recent page logs (bounded)
+  reload | close | health
+TELEMETRY: in your app expose  window.__AGENT_STATE__  (an object, or a function returning compact
+JSON), then read it with `codex-browser state`. No obscure endpoints needed.
+
+codex
+Server's up. Let me open the page and run the mouse-X verification — fake pointer lock + mousemove in a single eval call.
+
+
+exec
+/bin/zsh -lc 'codex-browser open http://127.0.0.1:8802/ 2>&1 | tail -3; sleep 1; codex-browser eval "JSON.stringify({ready: __AGENT_STATE__.ready, yaw: __AGENT_STATE__.camera.yaw, fwd: __AGENT_STATE__.camera.forward, lock: __AGENT_STATE__.pointerLocked})"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1271ms:
+  "url": "http://127.0.0.1:8802/",
+  "title": "Zombie FPS — block prototype"
+}
+{
+  "value": "{\"ready\":true,\"yaw\":0,\"fwd\":{\"x\":0,\"y\":0,\"z\":-1},\"lock\":false}"
+}
+
+codex
+Now the key test: fake pointer lock + mousemove in ONE eval call, then read the result after a frame.
+
+
+exec
+/bin/zsh -lc "codex-browser eval \"
+(function(){
+  var canvas = document.querySelector('#app canvas');
+  Object.defineProperty(document, 'pointerLockElement', { get: function(){ return canvas; }, configurable: true });
+  document.dispatchEvent(new Event('pointerlockchange'));
+  var before = window.__AGENT_STATE__.camera.yaw;
+  var ev = new MouseEvent('mousemove', {movementX: 400, movementY: 0, bubbles: true});
+  document.dispatchEvent(ev);
+  var after = window.__AGENT_STATE__.camera.yaw;
+  return JSON.stringify({before: before, after: after, lock: window.__AGENT_STATE__.pointerLocked});
+})()
+\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": "{\"before\":0,\"after\":0,\"lock\":false}"
+}
+
+codex
+The lock flag isn't sticking. Let me inspect the actual input handler code around lines 170-200.
+
+
+exec
+/bin/zsh -lc "sed -n '170,200p' game.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+// ---------------- input -----------------------------------------------------
+const startEl = document.getElementById('start');
+document.getElementById('playBtn').addEventListener('click', () => {
+  renderer.domElement.requestPointerLock();
+});
+document.addEventListener('pointerlockchange', () => {
+  pointerLocked = document.pointerLockElement === renderer.domElement;
+  startEl.classList.toggle('hidden', pointerLocked);
+  if (!pointerLocked) { firing = false; for (const k in keys) keys[k] = false; }
+});
+document.addEventListener('mousemove', (e) => {
+  if (!pointerLocked) return;
+  player.yaw += e.movementX * MOUSE_SENS;   // mouse right -> turn right -> yaw+ (camera.rotateY(-yaw): +yaw = screen-right)
+  player.pitch -= e.movementY * MOUSE_SENS; // mouse up -> pitch+ (look up)
+  player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch));
+});
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyW' || e.code === 'KeyA' || e.code === 'KeyS' || e.code === 'KeyD') {
+    keys[e.code] = true; e.preventDefault();
+  }
+});
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+renderer.domElement.addEventListener('mousedown', (e) => {
+  if (e.button === 0 && pointerLocked) firing = true;
+});
+window.addEventListener('mouseup', (e) => { if (e.button === 0) firing = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; firing = false; });
+
+// ---------------- movement --------------------------------------------------
+function updateMovement(dt) {
+  if (!player.alive) return;
+
+codex
+The handler looks right. The lock check is failing — let me debug whether my fake getter is actually being seen by the page.
+
+
+exec
+/bin/zsh -lc "codex-browser eval \"
+(function(){
+  var canvas = document.querySelector('#app canvas');
+  Object.defineProperty(document, 'pointerLockElement', { get: function(){ return canvas; }, configurable: true });
+  var a = document.pointerLockElement;
+  var b = (a === canvas);
+  document.dispatchEvent(new Event('pointerlockchange'));
+  var lockNow = window.__AGENT_STATE__.pointerLocked;
+  return JSON.stringify({aIsCanvas: b, lockNow: lockNow, aTag: a && a.tagName});
+})()
+\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": "{\"aIsCanvas\":true,\"lockNow\":true,\"aTag\":\"CANVAS\"}"
+}
+
+codex
+Lock works in this form. Let me now do the full sequence in one call: fake lock, dispatch change, then mousemove, reading yaw after.
+tokens used
+92,288
+Lock works in this form. Let me now do the full sequence in one call: fake lock, dispatch change, then mousemove, reading yaw after.

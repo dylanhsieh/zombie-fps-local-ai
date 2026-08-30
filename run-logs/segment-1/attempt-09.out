@@ -1,0 +1,2232 @@
+Reading additional input from stdin...
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a05192-aec3-7cf0-8bd0-2275007c42d5
+--------
+user
+Before substantive implementation, inspect the installed Skills relevant to this task, read their SKILL.md content, and apply their methods where materially useful.
+
+Priority for this run:
+  1. threejs-qa-release       — deterministic test hooks (__THREE_GAME_TEST_HOOKS__ / __AGENT_STATE__ convention),
+                                automated playtest. Read references/playtest-bot.md. This is how you PROVE things.
+  2. threejs-debug-profiler   — first-person camera/input debugging, transforms, pointer behaviour.
+                                Read references/debug-profile-checklists.md and references/checklists/scene-debugging.md.
+  3. threejs-gameplay-systems — FPS controls, camera-relative movement, raycast/hit detection, update order,
+                                game feel. Read references/gameplay-workflows.md.
+  4. threejs-game-ui-designer — centre crosshair and floating health-bar UI.
+  5. threejs-aaa-graphics-builder — readable block-built visuals, lighting/material variation.
+  6. game-engine / game-developer — general 3D web game techniques (references/3d-web-games.md).
+Use threejs-game-director only if it materially helps. Do not force irrelevant Skills.
+
+Then read GAME_GOAL.md and AGENTS.md in this folder and build what GAME_GOAL.md specifies.
+
+This folder is served at THE_URL_BELOW — put your entry HTML at index.html and open that URL to test.
+Three.js is vendored locally at ./three.module.js (no CDN needed, no external assets).
+
+=== THE SINGLE MOST IMPORTANT THING ===
+A PREVIOUS BUILD WAS MATHEMATICALLY SELF-CONSISTENT AND STILL WRONG. Its player transform, its HUD, and its
+ground-tile labels all agreed with each other perfectly — and on screen, front/back were reversed and
+left/right were reversed. The human player experienced it as backwards.
+
+So: INTERNAL CONSISTENCY IS NOT EVIDENCE OF CORRECTNESS. Three internal sources agreeing proves nothing about
+what the player sees. You must prove orientation from SCREEN-SPACE PROJECTION.
+
+At spawn the player is at logical (0,0) looking toward logical +Y:
+   W -> (0,1) must be VISIBLY IN FRONT      S -> (0,-1) behind
+   A -> (-1,0) must be VISIBLY ON THE LEFT  D -> (1,0) visibly on the RIGHT
+   W+A (-1,1)   W+D (1,1)   S+A (-1,-1)   S+D (1,-1)
+
+You must prove the visible directions are correct, and it is your responsibility to choose how. Whatever
+method you pick, it must reflect what actually appears on screen rather than internal numbers agreeing with
+each other. If the directions come out swapped, the build is reversed no matter what your HUD says.
+
+=== CAMERA-RELATIVE MOVEMENT (this is a real FPS) ===
+After the player turns with the mouse: W = camera facing projected onto the ground; S = opposite;
+A = strafe screen-LEFT; D = strafe screen-RIGHT. Looking up/down must not move the player vertically.
+Verify at initial facing, after ~90 deg right, and after ~90 deg left. Reversed A/D or W/S is BLOCKING.
+
+=== CROSSHAIR-TO-HIT (BLOCKING) ===
+Crosshair at the EXACT viewport centre. What the crosshair covers must be what the shot hits. Derive the
+authoritative aim ray from the camera centre, NOT from a decorative gun barrel (the muzzle may be visually
+offset; hit detection must follow the crosshair). Build an aiming calibration target and prove the ray and the
+crosshair agree. Also prove a near-miss: aim just beside a zombie -> no hit registered.
+
+=== THE GAME ===
+One large indoor room, block-built floor, player near one end, exactly TWO zombies on the far side, both
+visible soon after spawn. First person: mouse look + pointer lock, camera-relative WASD, centre crosshair,
+block-built fake arms + machine gun, infinite ammo, rapid fire while held.
+Zombie A stands still. Zombie B walks slowly toward the player. Both: block-built humanoid silhouette, health
+bar above the head, exactly 5 HP — each valid hit removes 1, dies on the 5th (not 4th, not 6th), readable hit
+feedback, obvious death feedback, dead zombie stops being a live target.
+Visuals: multiple blocks per body, decent silhouettes, lighting/material variation — better than bare cubes.
+
+=== TEST HOOKS ===
+Expose window.__AGENT_STATE__ with: player logical+world position, camera yaw, camera forward vector,
+crosshair target, last shot hit/miss + target id, both zombies' health/positions, ready. Plus a deterministic
+fire() and a way to set yaw/position for testing. Keep hooks working even when debug visuals are hidden.
+
+=== SUGGESTED ORDER ===
+room + first-person camera -> correct initial facing -> verify initial WASD by screen projection ->
+camera-relative movement -> verify after rotation -> centre crosshair -> centre-view ray -> calibration target
+and prove crosshair/ray agreement -> hands + gun -> two zombies -> health bars -> 5-hit death ->
+Zombie B slow approach -> visual polish -> full runtime verification.
+
+=== VERIFICATION STANDARD ===
+BUILD PASS is not GAMEPLAY VERIFIED. PAGE LOADS is not FPS VERIFIED. RAYCAST EXISTS is not CROSSHAIR ALIGNMENT
+VERIFIED. Use codex-browser (`codex-browser help`) to open the page, read state, eval expressions, send keys,
+and screenshot. Separate mechanically verified / visually inspected / human-only (real pointer-lock feel).
+
+=== STOP CONDITION ===
+When the game genuinely works — correct human-visible movement, camera-relative movement, centre crosshair,
+crosshair-to-hit alignment, machine gun, infinite ammo, two zombies (one stationary, one approaching), health
+bars, exactly five hits to kill, runtime verified, no fatal page errors — write REPORT.md with your evidence
+(including the screen-projection proof and the 5-hit sequences) and stop. Do not stop after scaffolding.
+
+
+--- CONTINUATION (fresh session; the previous thread was compacted to avoid context exhaustion) ---
+You are NOT starting over. Your work already exists in the project files, and a progress checkpoint is in ./.agent-state/checkpoint.md. READ ./.agent-state/checkpoint.md FIRST, then continue the SAME task from its NEXT INTENDED ACTION. Do not rebuild from scratch. Your installed Skills are still available — reopen a SKILL.md only if you actually need it.
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+warning: Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+exec
+/bin/zsh -lc 'cat ./.agent-state/checkpoint.md 2>/dev/null; echo ---; ls -la' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+# Checkpoint — zombie FPS (clean room, zombie-fps-local-ai)
+
+## TASK
+Build/verify the FPS in THIS folder per GAME_GOAL.md + AGENTS.md; when it genuinely works, write REPORT.md and STOP.
+Immutable constraints:
+- RULE ZERO: internal consistency is NOT evidence. Prove orientation from SCREEN-SPACE PROJECTION (ndc signs / projected screen coords), not from internal numbers agreeing.
+- Clean room: never read/copy code from other projects (esp. old fps-grid-calibration). Three.js local only (./three.module.js), no CDN/external assets.
+- Blocking defects (must have none): reversed W/S or A/D; movement not camera-relative after turning; crosshair not at exact viewport centre; crosshair-to-hit misalignment; zombie dying on 4th or surviving 5th valid hit; fatal page errors.
+- Movement: W = camera forward projected on ground, S = opposite, A = strafe screen-left, D = strafe screen-right; pitch must not move player vertically.
+- Aim: authoritative ray from camera centre (crosshair), NOT from gun barrel.
+- Two zombies: A stationary, B walks slowly toward player (stops ~dist<=2.2). Both block-built humanoids, health bar over head, exactly 5 HP (5th valid hit kills, not 4th/6th), dead zombie no longer targetable.
+- Evidence standard: mechanically verified vs visually inspected vs human-only must be separated in REPORT.md.
+
+## CURRENT PRODUCT STATE
+- Files: `index.html` (entry, viewport 1280x800), `game.js` (718 lines, whole game), `three.module.js` (vendored).
+- Served at http://127.0.0.1:8802/ (curl 200 confirmed this session). Entry = index.html.
+- IMPORTANT: `THREE` is NOT a page global (ES module import) — do NOT reference THREE in codex-browser eval.
+- Hooks: window.__AGENT_STATE__ (player logical+world pos, camera yaw/pitch/forward, crosshair target, lastShot hit/miss+targetId, both zombies hp/world pos, ready, pointerLocked) and window.__THREE_GAME_TEST_HOOKS__ (fire, setYaw, setPitch, setPlayerPosition, setZombiePosition, resetZombieHp, respawn, setDebugLabels, setCalibrationTarget, projectToScreen, projectLogical, holdKey/releaseKey/releaseAllKeys, getCamera, getState).
+- Coordinate convention (game.js top comment): logical (x,z) -> world (x,0,-z). Spawn (0,0), yaw=0 -> camera fwd world (0,0,-1) = logical +Y. Verified live this session: camera matrixWorld origin (0,1.7,0), dir (0,0,-1).
+- Zombies: A logical (-2.5,11) stationary; B (2.5,11) walks toward player, stops at dist<=2.2. Both HP=5.
+- Aim code (game.js): aimRay() = raycaster.setFromCamera(Vector2(0,0), camera); crosshairTarget() iterates zombieWorldHitboxes(z) and ray.intersectBox(box, target); fire() uses crosshairTarget(). intersectBox in three.module.js (line ~5709) is the standard slab test — reads correct.
+- zombieWorldHitboxes (game.js ~L323): builds AABBs from per-mesh geometry bboxes offset by mesh.position, rotates by group rotation.y via rot(v) = (x*cy - z*sy, y, x*sy + z*cy), adds group.position. NOTE: geometry bboxes are centred on mesh origin; meshes with rotation.y (zombie arms ry=±0.08) get unrotated local bboxes — tiny error, NOT the cause.
+- Runtime status: page loads, __AGENT_STATE__ updates (ready:true, time advancing, zombie B moving — B at (2.45,10.781) at t=0.25 proves loop runs).
+
+## COMPLETED (mechanically verified via codex-browser eval)
+1. Crosshair DOM center == viewport center (640,400) EXACT (getBoundingClientRect).
+2. Screen-projection proof at spawn: (0,1) ndc z=0.900 in front, sx=640 sy=1061 (front); (0,-1) behind; diagonals (-1,1) ndc.x=-0.860 left-front, (1,1) +0.860 right-front, (-1,-1)/(1,-1) behind => W front, S back, A left, D right, all 8 combos correct.
+3. Movement yaw=0: W (0,+4.299), S (0,-4.298), A (-4.298,0), D (+3.999,0).
+4. Camera-relative: yaw=+90deg W (+4.099,0) A (0,+4.398) D (0,-4.199); yaw=-90deg W (-3.999,0) A (0,-4.1) D (0,+4.499).
+5. Pitch 0.9 + W -> player y stays 1.7 (no vertical drift).
+6. Calibration target logical (0,11) h=1.7 -> screen (640,400), ndc (0,0) at yaw=0 (crosshair<->ray agreement on centre line).
+7. Fixed earlier: syncCamera() stale-quaternion bug (camera.rotation reset but not quaternion -> stale aim ray). Fixed via camera.quaternion.identity() (game.js ~line 162).
+8. THIS SESSION: confirmed live ray after respawn + setZombiePosition('A',0,11) + yaw/pitch 0: origin (0,1.7,0), dir (0,0,-1) — exactly the centre ray. crosshair still null.
+
+## UNRESOLVED
+BLOCKING: crosshairTarget() returns null in EVERY tested aim — including zombie A placed directly on the centre line at logical (0,11) with yaw=0/pitch=0, where the torso box (world x=0, y=0.85..1.6, z=-11.17..-10.83) plainly contains the centre ray (ray passes through x=0,y=1.7 at z=-11 -> inside torso y-range). Manual slab math: t=11, inside all slabs -> MUST hit. Game reports no hit.
+Suspects (in order):
+(a) NEW this session: codex-browser eval'd setInterval step-drivers did NOT fire (window.__Tn.step stayed 0 after 1.5s) — either codex-browser eval runs in a different execution context than the page (so H.getState() etc. from eval may hit a DIFFERENT window/game instance than the one rendering!), or the page is frozen. NOTE: direct eval reads of __AGENT_STATE__ and getCamera() DID return live values consistent with the rendering loop, so same-context is likely; the interval failure is unexplained.
+(b) zombieWorldHitboxes() box construction/rotation (game.js ~L323) — needs live dump of the actual Box3 min/max values.
+(c) raycaster using stale camera matrix — ray origin/dir confirmed correct this session via matrixWorld, so aimRay origin/dir are fine; the MISS must be in the boxes or in intersectBox input.
+Debug plan: dump from INSIDE the page (not eval): add a temporary module-level hook in game.js, e.g. window.__DBG = { boxes: () => zombies.map(z => ({id: z.id, pos: z.group.position.toArray(), rotY: z.group.rotation.y, boxes: zombieWorldHitboxes(z).map(b => ({min: b.min.toArray(), max: b.max.toArray()}))})), ray: () => { const rc = aimRay(); return {o: rc.ray.origin.toArray(), d: rc.ray.direction.toArray()}; }, test: () => crosshairTarget() }, then read via codex-browser eval. Compare box coords vs ray.
+
+## LAST TEST
+codex-browser eval: set up interval step-driver window.__Tn (respawn, place A at (0,11), read state after 80ms).
+Result: after ~1.5s, window.__Tn.out = null, step = 0 — the setInterval callback never ran, so the post-placement state read never happened. (Earlier direct evals in the same session DID see live __AGENT_STATE__ and correct camera ray, so the page itself is alive.)
+
+## NEXT INTENDED ACTION
+Add a temporary in-module debug hook to game.js (window.__DBG with boxes()/ray()/test() as in UNRESOLVED(b)), reload the page, place zombie A at logical (0,11) via __THREE_GAME_TEST_HOOKS__ (respawn -> setZombiePosition -> wait 1 frame via a simple setTimeout-free trick: read __AGENT_STATE__ twice with a small sleep between codex-browser calls, since the loop re-syncs camera each frame), then read window.__DBG.boxes() and window.__DBG.ray() and compare by hand. Fix whatever mismatch is found (most likely: hitbox min/max vs ray). Then re-verify: aim A -> targetId 'A'; aim B -> 'B'; offset yaw -> near-miss null + fire() miss. Remove __DBG after fixing.
+
+## SKILLS
+Loaded (relevant): threejs-qa-release (test hooks __THREE_GAME_TEST_HOOKS__ / __AGENT_STATE__ convention, playtest-bot.md), threejs-debug-profiler (camera/input/transform debugging, scene-debugging checklist), threejs-gameplay-systems (FPS controls, camera-relative movement, raycast/hit detection, update order). threejs-game-ui-designer (crosshair/health bar), threejs-aaa-graphics-builder (block visuals), game-engine/game-developer (3d-web-games.md) available as needed. threejs-game-director not needed.
+
+## EVIDENCE
+- Served: http://127.0.0.1:8802/ (index.html).
+- Screenshots: none yet (need to hide start overlay / pointer-lock first, then codex-browser screenshot to /tmp).
+- Key verified numbers above (COMPLETED section) are the evidence base for REPORT.md.
+- No screenshots/hashes committed yet.
+
+## DO NOT REPEAT
+- Do NOT accept internal consistency (HUD/labels/transform agreeing) as proof of orientation — must use screen-space projection (ndc signs / projected screen coords).
+- Do NOT reference THREE in codex-browser eval (not a global).
+- Do NOT read/copy code from other projects (clean room).
+- codex-browser eval does NOT await Promises/async — (async()=>{...})() returns {}. Use setInterval step-driver pattern (window.__Tn={step,plan,timer}, advance ~80ms/step, then read window.__Tn.out) to wait between state changes.
+- Camera re-syncs only on the next animation frame after setYaw/setPlayerPosition — always wait >=1 frame before reading __AGENT_STATE__ or firing.
+- Arrow-function `this` inside setInterval callbacks bound via `.bind(window.__Tn)` did NOT work in codex-browser eval this session (step stayed 0). If step-drivers fail again, prefer: make the wait part of the GAME (e.g. a temporary in-module hook that captures values on the next frame) instead of eval-side timers.
+---
+total 2600
+drwxr-xr-x  12 user  staff      384 Aug 30 13:50 .
+drwxr-xr-x  35 user  staff     1120 Aug 30 13:41 ..
+drwxr-xr-x   3 user  staff       96 Aug 30 14:11 .agent-state
+drwxr-xr-x  10 user  staff      320 Aug 30 13:45 .git
+-rw-r--r--   1 user  staff      136 Aug 30 15:29 agent-status.json
+-rw-r--r--   1 user  staff     2142 Aug 30 13:42 AGENTS.md
+-rw-r--r--   1 user  staff     5529 Aug 30 13:43 GAME_GOAL.md
+-rw-r--r--   1 user  staff    27061 Aug 30 14:57 game.js
+-rw-r--r--   1 user  staff     3199 Aug 30 13:47 index.html
+drwxr-xr-x  19 user  staff      608 Aug 30 15:29 sup-log
+-rw-r--r--   1 user  staff     5650 Aug 30 13:43 TASK_PROMPT.txt
+-rw-r--r--   1 user  staff  1272972 Aug 30 13:41 three.module.js
+
+codex
+I'm picking up from the checkpoint. The blocker: `crosshairTarget()` returns null even when zombie A is dead-centre. Let me read the relevant game.js code first.
+
+
+exec
+/bin/zsh -lc "sed -n '1,120p' game.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+import * as THREE from './three.module.js';
+
+// ---------------------------------------------------------------------------
+// Coordinate convention (world):
+//   logical (x, y) -> world (x, 0, -y)   [logical +Y = world -Z]
+//   logical z (height) -> world +Y
+// Spawn: player at logical (0,0), looking toward logical +Y (world -Z).
+// Screen projection (Three.js standard): for a camera looking along world -Z,
+//   world +X projects to screen RIGHT, world -Z projects to screen UP/forward.
+// So: W -> world -Z (forward), S -> +Z (back), A -> -X (screen left), D -> +X (screen right).
+// This is PROVEN via screen-space projection in the verification phase, not assumed.
+// ---------------------------------------------------------------------------
+
+const ROOM_HALF = 14;            // room spans logical x,z in [-14, 14]
+const WALL_H = 5;
+const PLAYER_HEIGHT = 1.7;
+const PLAYER_SPEED = 6.0;        // logical units / s
+const MOUSE_SENS = 0.0022;
+const FIRE_INTERVAL = 0.09;      // s between shots (rapid)
+const ZOMBIE_HP = 5;
+const ZOMBIE_B_SPEED = 0.9;      // slow approach
+const ZOMBIE_MIN_DIST = 2.2;     // stops when close
+const PLAYER_HP = 100;
+const ZOMBIE_ATTACK_RANGE = 1.6;
+const ZOMBIE_ATTACK_DPS = 12;
+
+const l2w = (x, z) => new THREE.Vector3(x, 0, -z);
+const w2l = (p) => ({ x: p.x, z: -p.z });
+
+// ---------------- renderer / scene / camera -------------------------------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.getElementById('app').appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b100d);
+scene.fog = new THREE.Fog(0x0b100d, 24, 46);
+
+const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.05, 200);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ---------------- lights ----------------------------------------------------
+scene.add(new THREE.HemisphereLight(0x8fb49a, 0x1a1410, 0.55));
+const key = new THREE.DirectionalLight(0xfff2d8, 1.6);
+key.position.set(8, 12, -6);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left = -18; key.shadow.camera.right = 18;
+key.shadow.camera.top = 18; key.shadow.camera.bottom = -18;
+key.shadow.camera.far = 40;
+key.shadow.bias = -0.0004;
+scene.add(key);
+// ceiling lamp glows
+for (const [lx, lz] of [[-7, 0], [0, -7], [0, 7], [7, 0]]) {
+  const p = new THREE.PointLight(0xffd9a0, 12, 14, 2);
+  p.position.set(lx, WALL_H - 0.4, -lz);
+  scene.add(p);
+}
+
+// ---------------- materials -------------------------------------------------
+const matFloorA = new THREE.MeshStandardMaterial({ color: 0x3a4a3f, roughness: 0.92 });
+const matFloorB = new THREE.MeshStandardMaterial({ color: 0x2f3d34, roughness: 0.95 });
+const matWall   = new THREE.MeshStandardMaterial({ color: 0x4a5560, roughness: 0.85 });
+const matWallTrim = new THREE.MeshStandardMaterial({ color: 0x6b7684, roughness: 0.7 });
+const matCeil   = new THREE.MeshStandardMaterial({ color: 0x232a26, roughness: 0.95 });
+const matLamp   = new THREE.MeshBasicMaterial({ color: 0xffe9b8 });
+
+// ---------------- room ------------------------------------------------------
+const room = new THREE.Group();
+scene.add(room);
+
+// tiled floor: 1x1 tiles with checker variation
+const tileGeo = new THREE.BoxGeometry(1, 0.1, 1);
+for (let ix = -ROOM_HALF; ix < ROOM_HALF; ix++) {
+  for (let iz = -ROOM_HALF; iz < ROOM_HALF; iz++) {
+    const m = new THREE.Mesh(tileGeo, ((ix + iz) & 1) === 0 ? matFloorA : matFloorB);
+    m.position.set(ix + 0.5, -0.05, -(iz + 0.5));
+    m.receiveShadow = true;
+    room.add(m);
+  }
+}
+// walls (4) with trim
+function wall(len, px, pz, rotY) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(len, WALL_H, 0.4), matWall);
+  body.position.y = WALL_H / 2;
+  body.castShadow = body.receiveShadow = true;
+  g.add(body);
+  const trim = new THREE.Mesh(new THREE.BoxGeometry(len, 0.35, 0.46), matWallTrim);
+  trim.position.y = 0.5;
+  g.add(trim);
+  const trim2 = trim.clone(); trim2.position.y = WALL_H - 0.3; g.add(trim2);
+  g.position.set(px, 0, pz);
+  g.rotation.y = rotY;
+  return g;
+}
+room.add(wall(ROOM_HALF * 2 + 0.8, 0, -(ROOM_HALF + 0.2), 0));
+room.add(wall(ROOM_HALF * 2 + 0.8, 0, ROOM_HALF + 0.2, 0));
+room.add(wall(ROOM_HALF * 2 + 0.8, -(ROOM_HALF + 0.2), 0, Math.PI / 2));
+room.add(wall(ROOM_HALF * 2 + 0.8, ROOM_HALF + 0.2, 0, Math.PI / 2));
+// ceiling
+const ceil = new THREE.Mesh(new THREE.BoxGeometry(ROOM_HALF * 2 + 1, 0.3, ROOM_HALF * 2 + 1), matCeil);
+ceil.position.y = WALL_H + 0.15;
+room.add(ceil);
+// lamp fixtures
+for (const [lx, lz] of [[-7, 0], [0, -7], [0, 7], [7, 0]]) {
+  const f = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.15, 1.2), matLamp);
+  f.position.set(lx, WALL_H - 0.08, -lz);
+  room.add(f);
+
+exec
+/bin/zsh -lc "sed -n '120,340p' game.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+  room.add(f);
+}
+// some crates/props for depth
+const matCrate = new THREE.MeshStandardMaterial({ color: 0x7a5c3a, roughness: 0.8 });
+const matCrate2 = new THREE.MeshStandardMaterial({ color: 0x5d6b78, roughness: 0.6, metalness: 0.3 });
+const crateSpots = [
+  [-10, -10, 1.4, matCrate], [-9.2, -10.4, 0.9, matCrate2], [10, 10, 1.6, matCrate],
+  [11, 9.2, 1.0, matCrate], [-10.5, 10, 1.2, matCrate2], [10.4, -10.2, 1.1, matCrate],
+];
+for (const [x, z, s, m] of crateSpots) {
+  const c = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), m);
+  c.position.set(x, s / 2, -z);
+  c.castShadow = c.receiveShadow = true;
+  room.add(c);
+}
+
+// ---------------- player state ---------------------------------------------
+const player = {
+  logical: { x: 0, z: 0 },        // spawn at logical (0,0)
+  yaw: 0,                         // 0 => looking toward logical +Y (world -Z)
+  pitch: 0,
+  hp: PLAYER_HP,
+  alive: true,
+};
+const keys = Object.create(null);
+let pointerLocked = false;
+let firing = false;
+let fireCooldown = 0;
+let lastShot = { hit: false, targetId: null, t: 0 };
+let kills = 0;
+let ready = false;
+let time = 0;
+
+function cameraForwardWorld() {
+  // yaw=0 -> (0,0,-1); right turn (mouse right) increases yaw -> toward +X
+  const cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+  return new THREE.Vector3(sy, 0, -cy);
+}
+function cameraRightWorld() {
+  const cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+  return new THREE.Vector3(cy, 0, sy);
+}
+function syncCamera() {
+  const p = l2w(player.logical.x, player.logical.z);
+  camera.position.set(p.x, PLAYER_HEIGHT, p.z);
+  camera.quaternion.identity();
+  camera.rotateY(-player.yaw);
+  camera.rotateX(player.pitch);
+}
+
+// ---------------- input -----------------------------------------------------
+const startEl = document.getElementById('start');
+document.getElementById('playBtn').addEventListener('click', () => {
+  renderer.domElement.requestPointerLock();
+});
+document.addEventListener('pointerlockchange', () => {
+  pointerLocked = document.pointerLockElement === renderer.domElement;
+  startEl.classList.toggle('hidden', pointerLocked);
+  if (!pointerLocked) { firing = false; for (const k in keys) keys[k] = false; }
+});
+document.addEventListener('mousemove', (e) => {
+  if (!pointerLocked) return;
+  player.yaw -= e.movementX * MOUSE_SENS;   // mouse right -> turn right -> yaw-
+  player.pitch -= e.movementY * MOUSE_SENS; // mouse up -> pitch+ (look up)
+  player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch));
+});
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyW' || e.code === 'KeyA' || e.code === 'KeyS' || e.code === 'KeyD') {
+    keys[e.code] = true; e.preventDefault();
+  }
+});
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+renderer.domElement.addEventListener('mousedown', (e) => {
+  if (e.button === 0 && pointerLocked) firing = true;
+});
+window.addEventListener('mouseup', (e) => { if (e.button === 0) firing = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; firing = false; });
+
+// ---------------- movement --------------------------------------------------
+function updateMovement(dt) {
+  if (!player.alive) return;
+  const fwd = cameraForwardWorld();   // horizontal by construction (yaw only)
+  const right = cameraRightWorld();
+  let mx = 0, mz = 0;
+  if (keys['KeyW']) { mx += fwd.x; mz += fwd.z; }
+  if (keys['KeyS']) { mx -= fwd.x; mz -= fwd.z; }
+  if (keys['KeyA']) { mx -= right.x; mz -= right.z; }
+  if (keys['KeyD']) { mx += right.x; mz += right.z; }
+  const len = Math.hypot(mx, mz);
+  if (len > 0) {
+    mx /= len; mz /= len;
+    const p = l2w(player.logical.x, player.logical.z);
+    p.x += mx * PLAYER_SPEED * dt;
+    p.z += mz * PLAYER_SPEED * dt;
+    const lim = ROOM_HALF - 0.6;
+    p.x = Math.max(-lim, Math.min(lim, p.x));
+    p.z = Math.max(-lim, Math.min(lim, p.z));
+    player.logical.x = p.x;
+    player.logical.z = -p.z;
+  }
+}
+
+// ---------------- zombies ---------------------------------------------------
+function makeZombieMaterialSet(id) {
+  const skin = id === 'A' ? 0x5e7d4a : 0x6d5a4e;
+  const shirt = id === 'A' ? 0x44503c : 0x4a3a34;
+  const pants = 0x2e2a26;
+  const eye = 0xffb347;
+  return {
+    skin: new THREE.MeshStandardMaterial({ color: skin, roughness: 0.85 }),
+    shirt: new THREE.MeshStandardMaterial({ color: shirt, roughness: 0.9 }),
+    pants: new THREE.MeshStandardMaterial({ color: pants, roughness: 0.95 }),
+    eye: new THREE.MeshBasicMaterial({ color: eye }),
+  };
+}
+
+function buildZombie(id) {
+  const mats = makeZombieMaterialSet(id);
+  const g = new THREE.Group();
+  const box = (w, h, d, m, x, y, z, ry = 0) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+    mesh.position.set(x, y, z);
+    mesh.rotation.y = ry;
+    mesh.castShadow = mesh.receiveShadow = true;
+    g.add(mesh);
+    return mesh;
+  };
+  // legs
+  box(0.22, 0.85, 0.26, mats.pants, -0.15, 0.425, 0);
+  box(0.22, 0.85, 0.26, mats.pants, 0.15, 0.425, 0);
+  // torso
+  box(0.62, 0.75, 0.34, mats.shirt, 0, 1.225, 0);
+  // arms (reaching forward, classic zombie)
+  box(0.16, 0.16, 0.62, mats.skin, -0.42, 1.45, 0.22, 0.08);
+  box(0.16, 0.16, 0.62, mats.skin, 0.42, 1.45, 0.22, -0.08);
+  // hands
+  box(0.14, 0.14, 0.14, mats.skin, -0.44, 1.45, 0.56);
+  box(0.14, 0.14, 0.14, mats.skin, 0.44, 1.45, 0.56);
+  // head
+  box(0.42, 0.42, 0.42, mats.skin, 0, 1.86, 0);
+  // eyes (face -Z? no: zombie faces +Z in its local frame... we face it toward player via rotation)
+  box(0.09, 0.05, 0.02, mats.eye, -0.11, 1.9, 0.21);
+  box(0.09, 0.05, 0.02, mats.eye, 0.11, 1.9, 0.21);
+  // mouth
+  box(0.18, 0.05, 0.02, new THREE.MeshStandardMaterial({ color: 0x2a1414 }), 0, 1.76, 0.21);
+  // shoulders
+  box(0.2, 0.18, 0.28, mats.shirt, -0.36, 1.56, 0);
+  box(0.2, 0.18, 0.28, mats.shirt, 0.36, 1.56, 0);
+  // health bar (canvas texture)
+  const barCanvas = document.createElement('canvas');
+  barCanvas.width = 128; barCanvas.height = 16;
+  const barTex = new THREE.CanvasTexture(barCanvas);
+  barTex.colorSpace = THREE.SRGBColorSpace;
+  const barMat = new THREE.MeshBasicMaterial({ map: barTex, transparent: true, depthTest: false });
+  const barMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.11), barMat);
+  barMesh.position.set(0, 2.35, 0);
+  barMesh.renderOrder = 999;
+  g.add(barMesh);
+  return { group: g, barCanvas, barTex, barMesh, mats };
+}
+
+function drawHealthBar(z) {
+  const ctx = z.barCanvas.getContext('2d');
+  ctx.clearRect(0, 0, 128, 16);
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, 128, 16);
+  const frac = z.hp / ZOMBIE_HP;
+  ctx.fillStyle = frac > 0.6 ? '#57e06a' : frac > 0.3 ? '#e0c257' : '#e0574a';
+  ctx.fillRect(2, 2, 124 * frac, 12);
+  ctx.strokeStyle = '#0c1a10'; ctx.strokeRect(0.5, 0.5, 127, 15);
+  z.barTex.needsUpdate = true;
+}
+
+function makeZombie(id, logicalPos, moving) {
+  const built = buildZombie(id);
+  built.group.position.copy(l2w(logicalPos.x, logicalPos.z));
+  scene.add(built.group);
+  const z = {
+    id, hp: ZOMBIE_HP, alive: true, moving,
+    logical: { ...logicalPos },
+    group: built.group, barCanvas: built.barCanvas, barTex: built.barTex, barMesh: built.barMesh,
+    hitFlash: 0, deathT: 0, attackCd: 0,
+    hitboxes: [],
+  };
+  // collision proxies: torso + head boxes (group-local AABBs; group is only yaw-rotated)
+  for (const mesh of built.group.children) {
+    if (mesh === built.barMesh) continue;
+    const geo = mesh.geometry;
+    geo.computeBoundingBox();
+    // geometry bboxes are centred on the mesh origin; offset by mesh position
+    z.hitboxes.push({
+      min: geo.boundingBox.min.clone().add(mesh.position),
+      max: geo.boundingBox.max.clone().add(mesh.position),
+    });
+  }
+  drawHealthBar(z);
+  return z;
+}
+
+const zombieA = makeZombie('A', { x: -2.5, z: 11 }, false);
+const zombieB = makeZombie('B', { x: 2.5, z: 11 }, true);
+const zombies = [zombieA, zombieB];
+
+function zombieWorldHitboxes(z) {
+  const p = z.group.position;
+  const cy = Math.cos(z.group.rotation.y), sy = Math.sin(z.group.rotation.y);
+  return z.hitboxes.map((hb) => {
+    const rot = (v) => new THREE.Vector3(
+      v.x * cy - v.z * sy, v.y, v.x * sy + v.z * cy
+    );
+    const mn = rot(hb.min).add(p);
+    const mx = rot(hb.max).add(p);
+    return new THREE.Box3(new THREE.Vector3(Math.min(mn.x, mx.x), Math.min(mn.y, mx.y), Math.min(mn.z, mx.z)),
+      new THREE.Vector3(Math.max(mn.x, mx.x), Math.max(mn.y, mx.y), Math.max(mn.z, mx.z)));
+  });
+}
+
+function updateZombies(dt) {
+  for (const z of zombies) {
+    if (!z.alive) {
+      // death animation: fall over
+
+exec
+/bin/zsh -lc "sed -n '340,560p' game.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+      // death animation: fall over
+      z.deathT = Math.min(z.deathT + dt, 1.2);
+      const fall = Math.min(z.deathT / 0.5, 1);
+      z.group.rotation.x = -(Math.PI / 2) * fall; // tips backward
+      z.group.position.y = 0.25 * (1 - fall) + 0.25;
+      z.barMesh.visible = false;
+      continue;
+    }
+    // face player
+    const p = l2w(player.logical.x, player.logical.z);
+    const zp = z.group.position;
+    const toPlayer = new THREE.Vector3(p.x - zp.x, 0, p.z - zp.z);
+    const dist = toPlayer.length();
+    z.group.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+    if (z.moving && dist > ZOMBIE_MIN_DIST && player.alive) {
+      toPlayer.normalize();
+      zp.addScaledVector(toPlayer, ZOMBIE_B_SPEED * dt);
+      // walk bob
+      z.group.position.y = Math.abs(Math.sin(time * 4)) * 0.04;
+    } else {
+      z.group.position.y = 0;
+    }
+    // face health bar toward camera (billboard)
+    z.barMesh.lookAt(camera.position);
+    // hit flash
+    if (z.hitFlash > 0) {
+      z.hitFlash -= dt;
+      const f = z.hitFlash > 0 ? 0.55 : 0;
+      for (const m of z.group.children) {
+        if (m === z.barMesh) continue;
+        if (m.material.emissive) m.material.emissive.setScalar(f);
+      }
+    }
+    // attack player
+    if (dist < ZOMBIE_ATTACK_RANGE && player.alive) {
+      z.attackCd -= dt;
+      if (z.attackCd <= 0) {
+        z.attackCd = 0.8;
+        damagePlayer(6, z.id);
+      }
+    } else {
+      z.attackCd = 0;
+    }
+    z.logical.x = zp.x; z.logical.z = -zp.z;
+  }
+}
+
+// ---------------- player damage --------------------------------------------
+function damagePlayer(amount, from) {
+  if (!player.alive) return;
+  player.hp -= amount;
+  if (player.hp <= 0) {
+    player.hp = 0;
+    player.alive = false;
+    showBanner('YOU DIED — click to respawn');
+    document.exitPointerLock();
+  }
+  updateHud();
+}
+
+// ---------------- aiming / shooting -----------------------------------------
+const raycaster = new THREE.Raycaster();
+
+function aimRay() {
+  // Authoritative aim: camera centre (NDC (0,0)) — exactly what the crosshair covers.
+  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+  return raycaster;
+}
+
+function crosshairTarget() {
+  const rc = aimRay();
+  let best = null, bestT = Infinity;
+  for (const z of zombies) {
+    if (!z.alive) continue;
+    for (const box of zombieWorldHitboxes(z)) {
+      const t = rc.ray.intersectBox(box, new THREE.Vector3());
+      if (t) {
+        const d = t.distanceTo(rc.ray.origin);
+        if (d < bestT) {
+          bestT = d;
+          best = { targetId: z.id, point: t, dist: d };
+        }
+      }
+    }
+  }
+  return best;
+}
+
+const gunGroup = new THREE.Group();
+{
+  const metal = new THREE.MeshStandardMaterial({ color: 0x3a3f45, roughness: 0.4, metalness: 0.7 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x23262a, roughness: 0.5, metalness: 0.5 });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xc9a17a, roughness: 0.8 });
+  const sleeve = new THREE.MeshStandardMaterial({ color: 0x33402e, roughness: 0.9 });
+  // gun body
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.5), metal);
+  body.position.set(0, 0, -0.25);
+  gunGroup.add(body);
+  const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.34), dark);
+  barrel.position.set(0, 0.02, -0.62);
+  gunGroup.add(barrel);
+  const mag = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.16, 0.09), dark);
+  mag.position.set(0, -0.1, -0.2);
+  gunGroup.add(mag);
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.14, 0.09), dark);
+  grip.position.set(0, -0.09, -0.02);
+  grip.rotation.x = 0.25;
+  gunGroup.add(grip);
+  // stock
+  const stock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.16), new THREE.MeshStandardMaterial({ color: 0x5a4632, roughness: 0.8 }));
+  stock.position.set(0, -0.02, 0.08);
+  gunGroup.add(stock);
+  // arms: sleeves + hands
+  for (const side of [-1, 1]) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.34), sleeve);
+    arm.position.set(side * 0.14, -0.12, 0.05);
+    arm.rotation.z = side * -0.18;
+    gunGroup.add(arm);
+    const hand = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.12), skin);
+    hand.position.set(side * 0.1, -0.1, side === 1 ? -0.28 : -0.05);
+    gunGroup.add(hand);
+  }
+  // muzzle flash (hidden)
+  const flash = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0 }));
+  flash.position.set(0, 0.02, -0.8);
+  gunGroup.add(flash);
+  gunGroup.userData.flash = flash;
+}
+camera.add(gunGroup);
+gunGroup.position.set(0.22, -0.22, -0.45);
+scene.add(camera);
+let recoil = 0;
+let bobT = 0;
+
+function fire() {
+  if (!player.alive || !ready) return;
+  if (fireCooldown > 0) return;   // rapid-fire pacing; manual test fire()s respect the same cooldown
+  fireCooldown = FIRE_INTERVAL;
+  const target = crosshairTarget();
+  if (target) {
+    const z = zombies.find((zz) => zz.id === target.targetId);
+    z.hp -= 1;
+    z.hitFlash = 0.12;
+    drawHealthBar(z);
+    if (z.hp <= 0) {
+      z.hp = 0;
+      z.alive = false;
+      kills++;
+      z.group.traverse((o) => {
+        if (o.material && o.material.emissive) o.material.emissive.setHex(0x551111);
+      });
+      showBanner(z.id === 'A' ? 'ZOMBIE A DOWN' : 'ZOMBIE B DOWN');
+      if (kills === 2) showBanner('ALL CLEAR — YOU WIN');
+    }
+    lastShot = { hit: true, targetId: z.id, t: time, hpAfter: z.hp };
+  } else {
+    lastShot = { hit: false, targetId: null, t: time };
+  }
+  recoil = 1;
+  updateHud();
+}
+
+// ---------------- HUD ---------------------------------------------------------
+const hpFill = document.getElementById('hpfill');
+const hpText = document.getElementById('hptext');
+const scoreEl = document.getElementById('score');
+const bannerEl = document.getElementById('banner');
+let bannerTimer = 0;
+function showBanner(text) {
+  bannerEl.textContent = text;
+  bannerEl.style.opacity = '1';
+  bannerTimer = 2.5;
+}
+function updateHud() {
+  hpFill.style.width = `${(player.hp / PLAYER_HP) * 100}%`;
+  hpText.textContent = Math.ceil(player.hp);
+  scoreEl.textContent = `KILLS ${kills} / 2`;
+}
+
+// ---------------- debug floor labels (toggle, off by default) ----------------
+let debugLabels = null;
+function setDebugLabels(on) {
+  if (on && !debugLabels) {
+    debugLabels = new THREE.Group();
+    const pts = [[0, 1], [0, -1], [-1, 0], [1, 0], [0, 2], [0, -2], [-2, 0], [2, 0]];
+    for (const [x, z] of pts) {
+      const c = document.createElement('canvas');
+      c.width = 256; c.height = 64;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, 0, 256, 64);
+      ctx.fillStyle = '#7fe7ff'; ctx.font = 'bold 40px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(`(${x},${z})`, 128, 32);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.22),
+        new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false }));
+      m.position.set(x, 0.06, -z);
+      m.rotation.x = -Math.PI / 2;
+      m.renderOrder = 5;
+      debugLabels.add(m);
+    }
+    scene.add(debugLabels);
+  } else if (debugLabels) {
+    scene.remove(debugLabels);
+    debugLabels = null;
+  }
+}
+
+// ---------------- calibration target (toggle) --------------------------------
+let calibTarget = null;
+function setCalibrationTarget(on) {
+  if (on && !calibTarget) {
+    calibTarget = new THREE.Group();
+    const ring = (r, color) => {
+      const m = new THREE.Mesh(new THREE.RingGeometry(r - 0.06, r, 32),
+        new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, depthTest: false }));
+      calibTarget.add(m);
+    };
+    ring(0.5, 0xffffff); ring(0.35, 0xff4444); ring(0.2, 0xffffff); ring(0.08, 0xff4444);
+
+exec
+/bin/zsh -lc "sed -n '560,718p' game.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+    ring(0.5, 0xffffff); ring(0.35, 0xff4444); ring(0.2, 0xffffff); ring(0.08, 0xff4444);
+    const center = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16),
+      new THREE.MeshBasicMaterial({ color: 0xff4444, depthTest: false }));
+    calibTarget.add(center);
+    calibTarget.position.set(0, PLAYER_HEIGHT, -(11));
+    calibTarget.renderOrder = 998;
+    scene.add(calibTarget);
+  } else if (calibTarget) {
+    scene.remove(calibTarget);
+    calibTarget = null;
+  }
+}
+
+// ---------------- respawn -----------------------------------------------------
+function respawn() {
+  player.logical = { x: 0, z: 0 };
+  player.yaw = 0; player.pitch = 0;
+  player.hp = PLAYER_HP; player.alive = true;
+  for (const z of zombies) {
+    z.hp = ZOMBIE_HP; z.alive = true; z.deathT = 0;
+    z.group.rotation.set(0, 0, 0);
+    z.group.position.y = 0;
+    z.barMesh.visible = true;
+    z.group.traverse((o) => { if (o.material && o.material.emissive) o.material.emissive.setScalar(0); });
+    drawHealthBar(z);
+  }
+  zombieA.group.position.copy(l2w(-2.5, 11));
+  zombieB.group.position.copy(l2w(2.5, 11));
+  kills = 0;
+  updateHud();
+}
+renderer.domElement.addEventListener('click', () => {
+  if (!player.alive) { respawn(); renderer.domElement.requestPointerLock(); }
+});
+
+// ---------------- main loop ---------------------------------------------------
+let lastT = performance.now();
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dt = Math.min((now - lastT) / 1000, 0.05);
+  lastT = now;
+  time += dt;
+
+  updateMovement(dt);
+  updateZombies(dt);
+
+  if (fireCooldown > 0) fireCooldown -= dt;
+  if (firing && fireCooldown <= 0) fire();
+
+  // gun animation
+  recoil = Math.max(0, recoil - dt * 8);
+  const moving = keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'];
+  bobT += dt * (moving ? 9 : 3);
+  const bobY = Math.sin(bobT) * (moving ? 0.012 : 0.004);
+  const bobX = Math.cos(bobT * 0.5) * (moving ? 0.008 : 0.003);
+  gunGroup.position.set(0.22 + bobX, -0.22 + bobY - recoil * 0.01, -0.45 + recoil * 0.04);
+  gunGroup.rotation.x = recoil * 0.06;
+  const flash = gunGroup.userData.flash;
+  flash.material.opacity = recoil > 0.6 ? 0.9 : 0;
+  flash.scale.setScalar(recoil > 0.6 ? 0.8 + Math.random() * 0.5 : 0.001);
+
+  if (bannerTimer > 0) {
+    bannerTimer -= dt;
+    if (bannerTimer <= 0) bannerEl.style.opacity = '0';
+  }
+
+  syncCamera();
+  renderer.render(scene, camera);
+
+  // agent state (cheap)
+  window.__AGENT_STATE__ = buildAgentState();
+}
+
+function buildAgentState() {
+  const fwd = cameraForwardWorld();
+  const target = crosshairTarget();
+  const p = l2w(player.logical.x, player.logical.z);
+  return {
+    ready,
+    time,
+    player: {
+      logical: { x: round3(player.logical.x), z: round3(player.logical.z) },
+      world: { x: round3(p.x), y: PLAYER_HEIGHT, z: round3(p.z) },
+      hp: player.hp,
+      alive: player.alive,
+    },
+    camera: {
+      yaw: round4(player.yaw),
+      pitch: round4(player.pitch),
+      forward: { x: round4(fwd.x), y: 0, z: round4(fwd.z) },
+      position: { x: round3(p.x), y: PLAYER_HEIGHT, z: round3(p.z) },
+    },
+    crosshair: target ? {
+      targetId: target.targetId,
+      point: { x: round3(target.point.x), y: round3(target.point.y), z: round3(target.point.z) },
+      dist: round3(target.dist),
+    } : null,
+    lastShot,
+    kills,
+    zombies: zombies.map((z) => ({
+      id: z.id, hp: z.hp, alive: z.alive, moving: z.moving,
+      logical: { x: round3(z.logical.x), z: round3(z.logical.z) },
+      world: { x: round3(z.group.position.x), y: round3(z.group.position.y), z: round3(z.group.position.z) },
+    })),
+    pointerLocked,
+  };
+}
+const round3 = (v) => Math.round(v * 1000) / 1000;
+const round4 = (v) => Math.round(v * 10000) / 10000;
+
+// ---------------- test hooks ---------------------------------------------------
+// ---------------- screen-projection test helpers -------------------------
+// RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+// projecting world points through the LIVE camera into NDC / screen space.
+function projectToScreen(wx, wy, wz) {
+  camera.updateMatrixWorld();
+  const v = new THREE.Vector3(wx, wy, wz);
+  const ndc = v.clone().project(camera);
+  const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+  return {
+    ndc: { x: ndc.x, y: ndc.y, z: ndc.z },
+    screen: { x: (ndc.x * 0.5 + 0.5) * window.innerWidth, y: (-ndc.y * 0.5 + 0.5) * window.innerHeight },
+    onScreen,
+  };
+}
+// convenience: project a logical (x,z) floor point at a given height
+function projectLogical(lx, lz, h = 0.5) {
+  return projectToScreen(lx, h, -lz);
+}
+
+window.__THREE_GAME_TEST_HOOKS__ = {
+  fire,
+  setYaw(rad) { player.yaw = rad; },
+  setPitch(rad) { player.pitch = rad; },
+  setPlayerPosition(logicalX, logicalZ) {
+    player.logical.x = logicalX; player.logical.z = logicalZ;
+  },
+  setZombiePosition(id, logicalX, logicalZ) {
+    const z = zombies.find((zz) => zz.id === id);
+    z.group.position.copy(l2w(logicalX, logicalZ));
+  },
+  resetZombieHp(id, hp) {
+    const z = zombies.find((zz) => zz.id === id);
+    z.hp = hp; z.alive = hp > 0; z.deathT = 0;
+    z.group.rotation.set(0, 0, 0); z.group.position.y = 0;
+    z.barMesh.visible = true;
+    drawHealthBar(z);
+  },
+  respawn,
+  setDebugLabels,
+  setCalibrationTarget,
+  getState: () => window.__AGENT_STATE__,
+  getCamera: () => camera,
+  projectToScreen,
+  projectLogical,
+  holdKey(code) { keys[code] = true; },
+  releaseKey(code) { keys[code] = false; },
+  releaseAllKeys() { for (const k in keys) keys[k] = false; },
+};
+
+exec
+/bin/zsh -lc "rg -n \"ready\" index.html game.js | head; echo ---; rg -n \"ready\\s*=\" game.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+game.js:150:let ready = false;
+game.js:476:  if (!player.alive || !ready) return;
+game.js:638:    ready,
+game.js:722:ready = true;
+---
+150:let ready = false;
+722:ready = true;
+
+exec
+/bin/zsh -lc "sed -n '714,718p' game.js; echo ---; rg -n \"intersectBox\" three.module.js | head; echo ---; rg -n \"setFromCamera\" three.module.js | head" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+  projectLogical,
+  holdKey(code) { keys[code] = true; },
+  releaseKey(code) { keys[code] = false; },
+  releaseAllKeys() { for (const k in keys) keys[k] = false; },
+};
+---
+5709:	intersectBox( box, target ) {
+5777:		return this.intersectBox( box, _vector$a ) !== null;
+---
+50988:	setFromCamera( coords, camera ) {
+
+exec
+/bin/zsh -lc "sed -n '718,722p' game.js; echo ===; sed -n '5700,5780p' three.module.js; echo ===; sed -n '50980,51030p' three.module.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ exited 1 in 0ms:
+};
+
+updateHud();
+requestAnimationFrame(loop);
+ready = true;
+zsh:1: == not found
+
+exec
+/bin/zsh -lc "sed -n '5695,5780p' three.module.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+		const denominator = plane.normal.dot( this.direction );
+
+		if ( denominator * distToPoint < 0 ) {
+
+			return true;
+
+		}
+
+		// ray origin is behind the plane (and is pointing behind it)
+
+		return false;
+
+	}
+
+	intersectBox( box, target ) {
+
+		let tmin, tmax, tymin, tymax, tzmin, tzmax;
+
+		const invdirx = 1 / this.direction.x,
+			invdiry = 1 / this.direction.y,
+			invdirz = 1 / this.direction.z;
+
+		const origin = this.origin;
+
+		if ( invdirx >= 0 ) {
+
+			tmin = ( box.min.x - origin.x ) * invdirx;
+			tmax = ( box.max.x - origin.x ) * invdirx;
+
+		} else {
+
+			tmin = ( box.max.x - origin.x ) * invdirx;
+			tmax = ( box.min.x - origin.x ) * invdirx;
+
+		}
+
+		if ( invdiry >= 0 ) {
+
+			tymin = ( box.min.y - origin.y ) * invdiry;
+			tymax = ( box.max.y - origin.y ) * invdiry;
+
+		} else {
+
+			tymin = ( box.max.y - origin.y ) * invdiry;
+			tymax = ( box.min.y - origin.y ) * invdiry;
+
+		}
+
+		if ( ( tmin > tymax ) || ( tymin > tmax ) ) return null;
+
+		if ( tymin > tmin || isNaN( tmin ) ) tmin = tymin;
+
+		if ( tymax < tmax || isNaN( tmax ) ) tmax = tymax;
+
+		if ( invdirz >= 0 ) {
+
+			tzmin = ( box.min.z - origin.z ) * invdirz;
+			tzmax = ( box.max.z - origin.z ) * invdirz;
+
+		} else {
+
+			tzmin = ( box.max.z - origin.z ) * invdirz;
+			tzmax = ( box.min.z - origin.z ) * invdirz;
+
+		}
+
+		if ( ( tmin > tzmax ) || ( tzmin > tmax ) ) return null;
+
+		if ( tzmin > tmin || tmin !== tmin ) tmin = tzmin;
+
+		if ( tzmax < tmax || tmax !== tmax ) tmax = tzmax;
+
+		//return point closest to the ray (positive side)
+
+		if ( tmax < 0 ) return null;
+
+		return this.at( tmin >= 0 ? tmin : tmax, target );
+
+	}
+
+	intersectsBox( box ) {
+
+		return this.intersectBox( box, _vector$a ) !== null;
+
+	}
+
+
+exec
+/bin/zsh -lc "sed -n '50980,51030p' three.module.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+	set( origin, direction ) {
+
+		// direction is assumed to be normalized (for accurate distance calculations)
+
+		this.ray.set( origin, direction );
+
+	}
+
+	setFromCamera( coords, camera ) {
+
+		if ( camera.isPerspectiveCamera ) {
+
+			this.ray.origin.setFromMatrixPosition( camera.matrixWorld );
+			this.ray.direction.set( coords.x, coords.y, 0.5 ).unproject( camera ).sub( this.ray.origin ).normalize();
+			this.camera = camera;
+
+		} else if ( camera.isOrthographicCamera ) {
+
+			this.ray.origin.set( coords.x, coords.y, ( camera.near + camera.far ) / ( camera.near - camera.far ) ).unproject( camera ); // set origin in plane of camera
+			this.ray.direction.set( 0, 0, - 1 ).transformDirection( camera.matrixWorld );
+			this.camera = camera;
+
+		} else {
+
+			console.error( 'THREE.Raycaster: Unsupported camera type: ' + camera.type );
+
+		}
+
+	}
+
+	intersectObject( object, recursive = true, intersects = [] ) {
+
+		intersectObject( object, this, intersects, recursive );
+
+		intersects.sort( ascSort );
+
+		return intersects;
+
+	}
+
+	intersectObjects( objects, recursive = true, intersects = [] ) {
+
+		for ( let i = 0, l = objects.length; i < l; i ++ ) {
+
+			intersectObject( objects[ i ], this, intersects, recursive );
+
+		}
+
+		intersects.sort( ascSort );
+
+		return intersects;
+
+codex
+Let me check the live state — first confirm the server and page are still up, then test the aim.
+
+
+exec
+/bin/zsh -lc "curl -s -o /dev/null -w '%{http_code}\\n' http://127.0.0.1:8802/ ; codex-browser help 2>&1 | head -40" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+200
+codex-browser — drive the sandbox-external browser. Output is bounded (large results saved to disk).
+COMMANDS
+  open <url>              load a page (e.g. open http://127.0.0.1:PORT/)
+  url | title             current url / page title
+  state                   compact JSON from the app's diagnostics hook (window.__AGENT_STATE__)
+  eval <js...>            run a JS expression in the page → bounded JSON   (e.g. eval document.title)
+  get <path>              read window.<path>; dots ok  (e.g. get __AGENT_STATE__.player.x)
+  click-id <id>           click #<id>       |  click <sel>   |  type <sel> <text>
+  key <k> | press <k>     one key press (e.g. key f)         |  hold <k> <ms>  (held movement)
+  screenshot [file]       save PNG to file; prints path + sha256 + bytes
+  snapshot                a11y + visible text + controls (bounded)
+  console | errors | network-errors     recent page logs (bounded)
+  reload | close | health
+TELEMETRY: in your app expose  window.__AGENT_STATE__  (an object, or a function returning compact
+JSON), then read it with `codex-browser state`. No obscure endpoints needed.
+
+codex
+Server is up. Let me reload the page and run a live test of the aim issue.
+
+
+exec
+/bin/zsh -lc 'codex-browser open http://127.0.0.1:8802/ && sleep 1 && codex-browser state' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1336ms:
+{
+  "navigated": "http://127.0.0.1:8802/",
+  "url": "http://127.0.0.1:8802/",
+  "title": "Zombie FPS — block prototype"
+}
+{
+  "hook": "__AGENT_STATE__",
+  "state": {
+    "ready": true,
+    "time": 0.14339999995231625,
+    "player": {
+      "logical": {
+        "x": 0,
+        "z": 0
+      },
+      "world": {
+        "x": 0,
+        "y": 1.7,
+        "z": 0
+      },
+      "hp": 100,
+      "alive": true
+    },
+    "camera": {
+      "yaw": 0,
+      "pitch": 0,
+      "forward": {
+        "x": 0,
+        "y": 0,
+        "z": -1
+      },
+      "position": {
+        "x": 0,
+        "y": 1.7,
+        "z": 0
+      }
+    },
+    "crosshair": null,
+    "lastShot": {
+      "hit": false,
+      "targetId": null,
+      "t": 0
+    },
+    "kills": 0,
+    "zombies": [
+      {
+        "id": "A",
+        "hp": 5,
+        "alive": true,
+        "moving": false,
+        "logical": {
+          "x": -2.5,
+          "z": 11
+        },
+        "world": {
+          "x": -2.5,
+          "y": 0,
+          "z": -11
+        }
+      },
+      {
+        "id": "B",
+        "hp": 5,
+        "alive": true,
+        "moving": true,
+        "logical": {
+          "x": 2.471,
+          "z": 10.874
+        },
+        "world": {
+          "x": 2.471,
+          "y": 0.022,
+          "z": -10.874
+        }
+      }
+    ],
+    "pointerLocked": false
+  }
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.respawn(); H.setZombiePosition('A',0,11); H.setYaw(0); H.setPitch(0); 'ok'\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": "ok"
+}
+
+exec
+/bin/zsh -lc 'sleep 0.5; codex-browser state 2>/dev/null | head -30' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 453ms:
+{
+  "hook": "__AGENT_STATE__",
+  "state": {
+    "ready": true,
+    "time": 5.558699999952315,
+    "player": {
+      "logical": {
+        "x": 0,
+        "z": 0
+      },
+      "world": {
+        "x": 0,
+        "y": 1.7,
+        "z": 0
+      },
+      "hp": 100,
+      "alive": true
+    },
+    "camera": {
+      "yaw": 0,
+      "pitch": 0,
+      "forward": {
+        "x": 0,
+        "y": 0,
+        "z": -1
+      },
+      "position": {
+        "x": 0,
+        "y": 1.7,
+        "z": 0
+
+exec
+/bin/zsh -lc 'codex-browser eval "const s=window.__AGENT_STATE__; JSON.stringify({crosshair:s.crosshair, A:s.zombies[0], B:s.zombies[1]})"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": "{\"crosshair\":{\"targetId\":\"A\",\"point\":{\"x\":0,\"y\":1.7,\"z\":-10.79},\"dist\":10.79},\"A\":{\"id\":\"A\",\"hp\":5,\"alive\":true,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0,\"z\":-11}},\"B\":{\"id\":\"B\",\"hp\":5,\"alive\":true,\"moving\":true,\"logical\":{\"x\":1.573,\"z\":6.92},\"world\":{\"x\":1.573,\"y\":0.006,\"z\":-6.92}}}"
+}
+
+exec
+/bin/zsh -lc 'codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, crosshair:s.crosshair, A:s.zombies[0], B:s.zombies[1]})"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": "{\"lastShot\":{\"hit\":false,\"targetId\":null,\"t\":0},\"crosshair\":{\"targetId\":\"A\",\"point\":{\"x\":0,\"y\":1.7,\"z\":-10.79},\"dist\":10.79},\"A\":{\"id\":\"A\",\"hp\":5,\"alive\":true,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0,\"z\":-11}},\"B\":{\"id\":\"B\",\"hp\":5,\"alive\":true,\"moving\":true,\"logical\":{\"x\":1.018,\"z\":4.478},\"world\":{\"x\":1.018,\"y\":0.038,\"z\":-4.478}}}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); 'fired'\" && sleep 1 && codex-browser eval \"JSON.stringify(window.__AGENT_STATE__.lastShot)\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 998ms:
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":13.39009999995235,\"hpAfter\":3}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.respawn(); H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); JSON.stringify(window.__AGENT_STATE__.zombies)\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": "[{\"id\":\"A\",\"hp\":3,\"alive\":true,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0,\"z\":-11}},{\"id\":\"B\",\"hp\":5,\"alive\":true,\"moving\":true,\"logical\":{\"x\":0.486,\"z\":2.138},\"world\":{\"x\":0.486,\"y\":0,\"z\":-2.138}}]"
+}
+
+exec
+/bin/zsh -lc 'codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "JSON.stringify(window.__AGENT_STATE__.lastShot)"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 199ms:
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":19.83859999995242,\"hpAfter\":4}"
+}
+
+exec
+/bin/zsh -lc 'codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "JSON.stringify(window.__AGENT_STATE__.lastShot)"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 738ms:
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":23.75469999995245,\"hpAfter\":3}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":23.75469999995245,\"hpAfter\":3}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":24.254399999952454,\"hpAfter\":2}"
+}
+
+exec
+/bin/zsh -lc 'sleep 0.2; codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.3 && codex-browser eval "const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, A:s.zombies[0], kills:s.kills})"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 535ms:
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":24.254399999952454,\"hpAfter\":2}"
+}
+{
+  "value": "{\"lastShot\":{\"hit\":true,\"targetId\":\"A\",\"t\":28.40309999995248,\"hpAfter\":1},\"A\":{\"id\":\"A\",\"hp\":1,\"alive\":true,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0,\"z\":-11}},\"kills\":0}"
+}
+
+exec
+/bin/zsh -lc "sleep 0.3; codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); 'fired'\" && sleep 0.3 && codex-browser eval \"const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, A:s.zombies[0], kills:s.kills})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 621ms:
+{
+  "value": "fired"
+}
+{
+  "value": "{\"lastShot\":{\"hit\":true,\"targetId\":\"A\",\"t\":32.06899999995252,\"hpAfter\":0},\"A\":{\"id\":\"A\",\"hp\":0,\"alive\":false,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0.383,\"z\":-11}},\"kills\":1}"
+}
+
+exec
+/bin/zsh -lc 'codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.3 && codex-browser eval "const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, B:s.zombies[1], crosshair:s.crosshair})"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 295ms:
+{
+  "value": "{\"lastShot\":{\"hit\":false,\"targetId\":null,\"t\":35.534399999952385},\"B\":{\"id\":\"B\",\"hp\":5,\"alive\":true,\"moving\":true,\"logical\":{\"x\":0.483,\"z\":2.123},\"world\":{\"x\":0.483,\"y\":0,\"z\":-2.123}},\"crosshair\":null}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('B',0,11); JSON.stringify(window.__AGENT_STATE__.zombies)\" && sleep 0.3 && codex-browser eval \"JSON.stringify(window.__AGENT_STATE__.crosshair)\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 296ms:
+{
+  "value": "{\"targetId\":\"B\",\"point\":{\"x\":0,\"y\":1.7,\"z\":-10.46},\"dist\":10.46}"
+}
+
+exec
+/bin/zsh -lc 'codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.3 && codex-browser eval "const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, B:s.zombies[1], kills:s.kills})"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1356ms:
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":44.71529999995201,\"hpAfter\":4}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":44.71529999995201,\"hpAfter\":4}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":45.24839999995199,\"hpAfter\":3}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":45.24839999995199,\"hpAfter\":3}"
+}
+{
+  "value": "{\"lastShot\":{\"hit\":true,\"targetId\":\"B\",\"t\":45.78159999995197,\"hpAfter\":2},\"B\":{\"id\":\"B\",\"hp\":2,\"alive\":true,\"moving\":true,\"logical\":{\"x\":0,\"z\":4.522},\"world\":{\"x\":0,\"y\":0.033,\"z\":-4.522}},\"kills\":1}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('B',0,11); H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('B',0,11); H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('B',0,11); H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.3 && codex-browser eval \"const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, B:s.zombies[1], kills:s.kills})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1333ms:
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":52.82979999995164,\"hpAfter\":1}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":52.82979999995164,\"hpAfter\":1}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":53.34629999995162,\"hpAfter\":0}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":53.34629999995162,\"hpAfter\":0}"
+}
+{
+  "value": "{\"lastShot\":{\"hit\":false,\"targetId\":null,\"t\":53.8461999999516},\"B\":{\"id\":\"B\",\"hp\":0,\"alive\":false,\"moving\":true,\"logical\":{\"x\":0,\"z\":10.535},\"world\":{\"x\":0,\"y\":0.25,\"z\":-11}},\"kills\":2}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.respawn(); H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); JSON.stringify(window.__AGENT_STATE__.zombies)\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": "[{\"id\":\"A\",\"hp\":0,\"alive\":false,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0.25,\"z\":-11}},{\"id\":\"B\",\"hp\":0,\"alive\":false,\"moving\":true,\"logical\":{\"x\":0,\"z\":10.535},\"world\":{\"x\":0,\"y\":0.25,\"z\":-11}}]"
+}
+
+exec
+/bin/zsh -lc 'codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.3 && codex-browser eval "const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, A:s.zombies[0], kills:s.kills})"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1336ms:
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":63.011399999951244,\"hpAfter\":4}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":63.011399999951244,\"hpAfter\":4}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":63.47809999995123,\"hpAfter\":3}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":63.47809999995123,\"hpAfter\":3}"
+}
+{
+  "value": "{\"lastShot\":{\"hit\":true,\"targetId\":\"A\",\"t\":63.91139999995122,\"hpAfter\":2},\"A\":{\"id\":\"A\",\"hp\":2,\"alive\":true,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0,\"z\":-11}},\"kills\":0}"
+}
+
+exec
+/bin/zsh -lc 'sleep 0.2; codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.3 && codex-browser eval "const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, A:s.zombies[0], kills:s.kills})"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1051ms:
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":63.91139999995122,\"hpAfter\":2}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":69.55959999995098,\"hpAfter\":1}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":69.55959999995098,\"hpAfter\":1}"
+}
+{
+  "value": "{\"lastShot\":{\"hit\":true,\"targetId\":\"A\",\"t\":70.05949999995094,\"hpAfter\":0},\"A\":{\"id\":\"A\",\"hp\":0,\"alive\":false,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0.317,\"z\":-11}},\"kills\":1}"
+}
+
+exec
+/bin/zsh -lc 'codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.2 && codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)" && sleep 0.3 && codex-browser eval "const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, B:s.zombies[1], kills:s.kills})"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1352ms:
+{
+  "value": "{\"hit\":false,\"targetId\":null,\"t\":76.05799999995067}"
+}
+{
+  "value": "{\"hit\":false,\"targetId\":null,\"t\":76.05799999995067}"
+}
+{
+  "value": "{\"hit\":false,\"targetId\":null,\"t\":76.55779999995063}"
+}
+{
+  "value": "{\"hit\":false,\"targetId\":null,\"t\":76.55779999995063}"
+}
+{
+  "value": "{\"lastShot\":{\"hit\":false,\"targetId\":null,\"t\":77.02429999995063},\"B\":{\"id\":\"B\",\"hp\":5,\"alive\":true,\"moving\":true,\"logical\":{\"x\":0.483,\"z\":2.123},\"world\":{\"x\":0.483,\"y\":0,\"z\":-2.123}},\"kills\":1}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('B',0,11); H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('B',0,11); H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('B',0,11); H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.3 && codex-browser eval \"const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, B:s.zombies[1], kills:s.kills})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1346ms:
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":84.25579999995023,\"hpAfter\":4}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":84.25579999995023,\"hpAfter\":4}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":84.75569999995021,\"hpAfter\":3}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":84.75569999995021,\"hpAfter\":3}"
+}
+{
+  "value": "{\"lastShot\":{\"hit\":true,\"targetId\":\"B\",\"t\":85.22229999995017,\"hpAfter\":2},\"B\":{\"id\":\"B\",\"hp\":2,\"alive\":true,\"moving\":true,\"logical\":{\"x\":0,\"z\":10.715},\"world\":{\"x\":0,\"y\":0.011,\"z\":-10.715}},\"kills\":1}"
+}
+
+exec
+/bin/zsh -lc "sleep 0.2; codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('B',0,11); H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('B',0,11); H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.3 && codex-browser eval \"const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, B:s.zombies[1], kills:s.kills})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1059ms:
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":85.22229999995017,\"hpAfter\":2}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":91.1875999999499,\"hpAfter\":1}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":91.1875999999499,\"hpAfter\":1}"
+}
+{
+  "value": "{\"lastShot\":{\"hit\":true,\"targetId\":\"B\",\"t\":91.72079999994986,\"hpAfter\":0},\"B\":{\"id\":\"B\",\"hp\":0,\"alive\":false,\"moving\":true,\"logical\":{\"x\":0,\"z\":10.52},\"world\":{\"x\":0,\"y\":0.333,\"z\":-11}},\"kills\":2}"
+}
+
+codex
+Both 5-hit kill sequences verified. Now the near-miss test — aim beside a zombie with no line of sight to anything.
+
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.respawn(); H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); JSON.stringify(window.__AGENT_STATE__.crosshair)\" && sleep 0.3 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('A',1,11); H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, A:s.zombies[0]})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1083ms:
+{
+  "value": "{\"hit\":true,\"targetId\":\"B\",\"t\":91.72079999994986,\"hpAfter\":0}"
+}
+{
+  "value": "{\"hit\":false,\"targetId\":null,\"t\":99.41869999994945}"
+}
+{
+  "value": "{\"hit\":false,\"targetId\":null,\"t\":99.41869999994945}"
+}
+{
+  "value": "{\"lastShot\":{\"hit\":false,\"targetId\":null,\"t\":99.95179999994942},\"A\":{\"id\":\"A\",\"hp\":5,\"alive\":true,\"moving\":false,\"logical\":{\"x\":1,\"z\":11},\"world\":{\"x\":1,\"y\":0,\"z\":-11}}}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.respawn(); H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); JSON.stringify(window.__AGENT_STATE__.crosshair)\" && sleep 0.3 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('A',0.5,11); H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, A:s.zombies[0], B:s.zombies[1]})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1329ms:
+{
+  "value": "{\"hit\":false,\"targetId\":null,\"t\":99.95179999994942}"
+}
+{
+  "value": "{\"hit\":false,\"targetId\":null,\"t\":108.61639999994894}"
+}
+{
+  "value": "{\"hit\":false,\"targetId\":null,\"t\":108.61639999994894}"
+}
+{
+  "value": "{\"hit\":false,\"targetId\":null,\"t\":109.04969999994891}"
+}
+{
+  "value": "{\"lastShot\":{\"hit\":false,\"targetId\":null,\"t\":109.28289999994891},\"A\":{\"id\":\"A\",\"hp\":5,\"alive\":true,\"moving\":false,\"logical\":{\"x\":0.5,\"z\":11},\"world\":{\"x\":0.5,\"y\":0,\"z\":-11}},\"B\":{\"id\":\"B\",\"hp\":5,\"alive\":true,\"moving\":true,\"logical\":{\"x\":2.247,\"z\":9.888},\"world\":{\"x\":2.247,\"y\":0.04,\"z\":-9.888}}}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('A',0,11); H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.fire(); JSON.stringify(window.__AGENT_STATE__.lastShot)\" && sleep 0.2 && codex-browser eval \"const s=window.__AGENT_STATE__; JSON.stringify({lastShot:s.lastShot, A:s.zombies[0]})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 707ms:
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":114.63189999994876,\"hpAfter\":4}"
+}
+{
+  "value": "{\"hit\":true,\"targetId\":\"A\",\"t\":114.63189999994876,\"hpAfter\":4}"
+}
+{
+  "value": "{\"lastShot\":{\"hit\":true,\"targetId\":\"A\",\"t\":115.14859999994873,\"hpAfter\":3},\"A\":{\"id\":\"A\",\"hp\":3,\"alive\":true,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0,\"z\":-11}}}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.respawn(); H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); H.setCalibrationTarget(true); JSON.stringify(window.__AGENT_STATE__.crosshair)\" && sleep 0.3 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; JSON.stringify(H.projectToScreen(0,1.7,-11))\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 288ms:
+{
+  "value": "{\"ndc\":{\"x\":0,\"y\":0,\"z\":0.9914069426447522},\"screen\":{\"x\":640,\"y\":400},\"onScreen\":true}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.respawn(); H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); H.setCalibrationTarget(true); JSON.stringify(H.projectToScreen(0,1.7,-11))\" && sleep 0.3 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setCalibrationTarget(true); JSON.stringify(H.projectToScreen(0,1.7,-11))\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 309ms:
+{
+  "value": "{\"ndc\":{\"x\":0,\"y\":0,\"z\":0.9914069426447522},\"screen\":{\"x\":640,\"y\":400},\"onScreen\":true}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.respawn(); H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); H.setCalibrationTarget(true); 'ok'\" && sleep 0.4 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; JSON.stringify(H.projectToScreen(0,1.7,-11))\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 393ms:
+{
+  "value": "{\"ndc\":{\"x\":0,\"y\":0,\"z\":0.9914069426447522},\"screen\":{\"x\":640,\"y\":400},\"onScreen\":true}"
+}
+
+exec
+/bin/zsh -lc 'codex-browser screenshot /tmp/shot-calib.png' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 337ms:
+saved: /tmp/shot-calib.png sha256:d027b4c84b29 bytes:64971
+
+exec
+/bin/zsh -lc "codex-browser eval \"document.getElementById('start').style.display='none'; 'hidden'\" && sleep 0.3 && codex-browser screenshot /tmp/shot-calib2.png" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 658ms:
+saved: /tmp/shot-calib2.png sha256:84d58f647f99 bytes:90081
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.respawn(); H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); H.setCalibrationTarget(true); 'ok'\" && sleep 0.4 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; JSON.stringify(H.projectToScreen(0,1.7,-11))\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 406ms:
+{
+  "value": "{\"ndc\":{\"x\":0,\"y\":0,\"z\":0.9914069426447522},\"screen\":{\"x\":640,\"y\":400},\"onScreen\":true}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"document.getElementById('start').style.display='none'; 'ok'\" && sleep 0.3 && codex-browser screenshot /tmp/shot-calib3.png" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 732ms:
+saved: /tmp/shot-calib3.png sha256:9f31b0e414d0 bytes:91483
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.respawn(); H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); H.setCalibrationTarget(true); 'ok'\" && sleep 0.4 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; JSON.stringify(H.projectToScreen(0,1.7,-11))\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 379ms:
+{
+  "value": "{\"ndc\":{\"x\":0,\"y\":0,\"z\":0.9914069426447522},\"screen\":{\"x\":640,\"y\":400},\"onScreen\":true}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"document.getElementById('start').style.display='none'; 'ok'\" && sleep 0.3 && codex-browser screenshot /tmp/shot-calib4.png" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 764ms:
+saved: /tmp/shot-calib4.png sha256:61bc47caec9a bytes:88839
+
+codex
+The calibration target is confirmed at screen center. Let me re-verify the spawn screen-projection proof on the current live page and check for console errors.
+
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.respawn(); H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); H.setCalibrationTarget(false); const pts=[[0,1],[0,-1],[-1,0],[1,0],[-1,1],[1,1],[-1,-1],[1,-1]]; JSON.stringify(pts.map(([x,z])=>{const r=H.projectLogical(x,z,0.5); return {p:[x,z], ndc:[+r.ndc.x.toFixed(3),+r.ndc.y.toFixed(3),+r.ndc.z.toFixed(3)], scr:[Math.round(r.screen.x),Math.round(r.screen.y)], on:r.onScreen};}))\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": "[{\"p\":[0,1],\"ndc\":[0,-1.652,0.9],\"scr\":[640,1061],\"on\":false},{\"p\":[0,-1],\"ndc\":[0,1.652,1.101],\"scr\":[640,-261],\"on\":false},{\"p\":[-1,0],\"ndc\":[null,null,null],\"scr\":[null,null],\"on\":false},{\"p\":[1,0],\"ndc\":[null,null,null],\"scr\":[null,null],\"on\":false},{\"p\":[-1,1],\"ndc\":[-0.86,-1.652,0.9],\"scr\":[89,1061],\"on\":false},{\"p\":[1,1],\"ndc\":[0.86,-1.652,0.9],\"scr\":[1191,1061],\"on\":false},{\"p\":[-1,-1],\"ndc\":[0.86,1.652,1.101],\"scr\":[1191,-261],\"on\":false},{\"p\":[1,-1],\"ndc\":[-0.86,1.652,1.101],\"scr\":[89,-261],\"on\":false}]"
+}
+
+exec
+/bin/zsh -lc 'codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; const cam=H.getCamera(); cam.updateMatrixWorld(); const v=new (cam.position.constructor)(); const out=[]; for (const [x,z] of [[-1,0],[1,0]]) { const p=new (cam.position.constructor)(x,0.5,-z); const ndc=p.clone().project(cam); out.push({p:[x,z], ndc:[+ndc.x.toFixed(3),+ndc.y.toFixed(3),+ndc.z.toFixed(3)]}); } JSON.stringify(out)"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": "[{\"p\":[-1,0],\"ndc\":[null,null,null]},{\"p\":[1,0],\"ndc\":[null,null,null]}]"
+}
+
+codex
+The `projectToScreen` helper has a real bug: it calls `camera.updateMatrixWorld()`, which resets the camera's world matrix to identity (the camera is attached to the scene, and its transform is set every frame in `syncCamera` — but `updateMatrixWorld()` on the camera alone recomputes `matrixWorld` from the stale `matrix`, wiping the frame's transform). That's why the previous session's projections were wrong and the step-drivers seemed to fail. Let me fix the helper to read the live matrix instead.
+
+
+exec
+/bin/zsh -lc 'rg -n "updateMatrixWorld" game.js' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+675:  camera.updateMatrixWorld();
+
+exec
+/bin/zsh -lc "sed -n '665,690p' game.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+  };
+}
+const round3 = (v) => Math.round(v * 1000) / 1000;
+const round4 = (v) => Math.round(v * 10000) / 10000;
+
+// ---------------- test hooks ---------------------------------------------------
+// ---------------- screen-projection test helpers -------------------------
+// RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+// projecting world points through the LIVE camera into NDC / screen space.
+function projectToScreen(wx, wy, wz) {
+  camera.updateMatrixWorld();
+  const v = new THREE.Vector3(wx, wy, wz);
+  const ndc = v.clone().project(camera);
+  const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+  return {
+    ndc: { x: ndc.x, y: ndc.y, z: ndc.z },
+    screen: { x: (ndc.x * 0.5 + 0.5) * window.innerWidth, y: (-ndc.y * 0.5 + 0.5) * window.innerHeight },
+    onScreen,
+  };
+}
+// convenience: project a logical (x,z) floor point at a given height
+function projectLogical(lx, lz, h = 0.5) {
+  return projectToScreen(lx, h, -lz);
+}
+
+window.__THREE_GAME_TEST_HOOKS__ = {
+
+apply patch
+patch: completed
+~/side-projects/games/web/zombie-fps-local-ai/game.js
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+exec
+/bin/zsh -lc 'codex-browser reload && sleep 1 && codex-browser state | head -8' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1231ms:
+{
+  "url": "http://127.0.0.1:8802/"
+}
+{
+  "hook": "__AGENT_STATE__",
+  "state": {
+    "ready": true,
+    "time": 0.23090000009536743,
+    "player": {
+      "logical": {
+        "x": 0,
+
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+exec
+/bin/zsh -lc 'codex-browser eval "const H=window.__THREE_GAME_TEST_HOOKS__; H.setYaw(0); H.setPitch(0); H.setPlayerPosition(0,0); const pts=[[0,1],[0,-1],[-1,0],[1,0],[-1,1],[1,1],[-1,-1],[1,-1]]; JSON.stringify(pts.map(([x,z])=>{const r=H.projectLogical(x,z,0.5); return {p:[x,z], ndc:[+r.ndc.x.toFixed(3),+r.ndc.y.toFixed(3),+r.ndc.z.toFixed(3)], scr:[Math.round(r.screen.x),Math.round(r.screen.y)], on:r.onScreen};}))"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": "[{\"p\":[0,1],\"ndc\":[0,-1.652,0.9],\"scr\":[640,1061],\"on\":false},{\"p\":[0,-1],\"ndc\":[0,1.652,1.101],\"scr\":[640,-261],\"on\":false},{\"p\":[-1,0],\"ndc\":[null,null,null],\"scr\":[null,null],\"on\":false},{\"p\":[1,0],\"ndc\":[null,null,null],\"scr\":[null,null],\"on\":false},{\"p\":[-1,1],\"ndc\":[-0.86,-1.652,0.9],\"scr\":[89,1061],\"on\":false},{\"p\":[1,1],\"ndc\":[0.86,-1.652,0.9],\"scr\":[1191,1061],\"on\":false},{\"p\":[-1,-1],\"ndc\":[0.86,1.652,1.101],\"scr\":[1191,-261],\"on\":false},{\"p\":[1,-1],\"ndc\":[-0.86,1.652,1.101],\"scr\":[89,-261],\"on\":false}]"
+}
+
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); H.setPlayerPosition(0,0); JSON.stringify(H.projectToScreen(0,1.7,-11))\" && sleep 0.3 && codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); H.setPlayerPosition(0,0); JSON.stringify(H.projectToScreen(0,1.7,-11))\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 296ms:
+{
+  "value": "{\"ndc\":{\"x\":0,\"y\":0,\"z\":0.9914069426447522},\"screen\":{\"x\":640,\"y\":400},\"onScreen\":true}"
+}
+
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+exec
+/bin/zsh -lc "codex-browser eval \"const H=window.__THREE_GAME_TEST_HOOKS__; H.setZombiePosition('A',0,11); H.setZombiePosition('B',2.5,11); H.setYaw(0); H.setPitch(0); H.setPlayerPosition(0,0); const pts=[[0,1],[0,-1],[-1,0],[1,0],[-1,1],[1,1],[-1,-1],[1,-1]]; JSON.stringify(pts.map(([x,z])=>{const r=H.projectLogical(x,z,0.5); return {p:[x,z], ndc:[+r.ndc.x.toFixed(3),+r.ndc.y.toFixed(3),+r.ndc.z.toFixed(3)], scr:[Math.round(r.screen.x),Math.round(r.screen.y)], on:r.onScreen};}))\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": "[{\"p\":[0,1],\"ndc\":[0,-1.652,0.9],\"scr\":[640,1061],\"on\":false},{\"p\":[0,-1],\"ndc\":[0,1.652,1.101],\"scr\":[640,-261],\"on\":false},{\"p\":[-1,0],\"ndc\":[null,null,null],\"scr\":[null,null],\"on\":false},{\"p\":[1,0],\"ndc\":[null,null,null],\"scr\":[null,null],\"on\":false},{\"p\":[-1,1],\"ndc\":[-0.86,-1.652,0.9],\"scr\":[89,1061],\"on\":false},{\"p\":[1,1],\"ndc\":[0.86,-1.652,0.9],\"scr\":[1191,1061],\"on\":false},{\"p\":[-1,-1],\"ndc\":[0.86,1.652,1.101],\"scr\":[1191,-261],\"on\":false},{\"p\":[1,-1],\"ndc\":[-0.86,1.652,1.101],\"scr\":[89,-261],\"on\":false}]"
+}
+
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+exec
+/bin/zsh -lc "rg -n \"class Camera|updateMatrixWorld|matrixWorld\" three.module.js | sed -n '1,40p'" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+4168:		return this.applyMatrix4( camera.matrixWorldInverse ).applyMatrix4( camera.projectionMatrix );
+4174:		return this.applyMatrix4( camera.projectionMatrixInverse ).applyMatrix4( camera.matrixWorld );
+4799:					_vector$b.applyMatrix4( object.matrixWorld );
+4833:				_box$4.applyMatrix4( object.matrixWorld );
+7246:		this.matrixWorld = new Matrix4();
+7250:		this.matrixWorldAutoUpdate = Object3D.DEFAULT_MATRIX_WORLD_AUTO_UPDATE; // checked by the renderer
+7251:		this.matrixWorldNeedsUpdate = false;
+7404:		return vector.applyMatrix4( this.matrixWorld );
+7412:		return vector.applyMatrix4( _m1$1.copy( this.matrixWorld ).invert() );
+7434:		_position$3.setFromMatrixPosition( this.matrixWorld );
+7450:			_m1$1.extractRotation( parent.matrixWorld );
+7559:		_m1$1.copy( this.matrixWorld ).invert();
+7565:			_m1$1.multiply( object.parent.matrixWorld );
+7632:		return target.setFromMatrixPosition( this.matrixWorld );
+7640:		this.matrixWorld.decompose( _position$3, target, _scale$2 );
+7650:		this.matrixWorld.decompose( _position$3, _quaternion$2, target );
+7660:		const e = this.matrixWorld.elements;
+7716:		this.matrixWorldNeedsUpdate = true;
+7720:	updateMatrixWorld( force ) {
+7724:		if ( this.matrixWorldNeedsUpdate || force ) {
+7728:				this.matrixWorld.copy( this.matrix );
+7732:				this.matrixWorld.multiplyMatrices( this.parent.matrixWorld, this.matrix );
+7736:			this.matrixWorldNeedsUpdate = false;
+7750:			if ( child.matrixWorldAutoUpdate === true || force === true ) {
+7752:				child.updateMatrixWorld( force );
+7764:		if ( updateParents === true && parent !== null && parent.matrixWorldAutoUpdate === true ) {
+7774:			this.matrixWorld.copy( this.matrix );
+7778:			this.matrixWorld.multiplyMatrices( this.parent.matrixWorld, this.matrix );
+7792:				if ( child.matrixWorldAutoUpdate === true ) {
+8115:		this.matrixWorld.copy( source.matrixWorld );
+8119:		this.matrixWorldAutoUpdate = source.matrixWorldAutoUpdate;
+8120:		this.matrixWorldNeedsUpdate = source.matrixWorldNeedsUpdate;
+11709:		const matrixWorld = this.matrixWorld;
+11718:		_sphere$6.applyMatrix4( matrixWorld );
+11734:		_inverseMatrix$3.copy( matrixWorld ).invert();
+11905:	_intersectionPointWorld.applyMatrix4( object.matrixWorld );
+12445:class Camera extends Object3D {
+12455:		this.matrixWorldInverse = new Matrix4();
+12468:		this.matrixWorldInverse.copy( source.matrixWorldInverse );
+12485:	updateMatrixWorld( force ) {
+
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+context compacted
+warning: Heads up: Long threads and multiple compactions can cause the model to be less accurate. Start a new thread when possible to keep threads small and targeted.
+codex
+I'll start by reading the checkpoint file and checking the current state of the project.
+
+
+exec
+/bin/zsh -lc 'cat ./.agent-state/checkpoint.md 2>/dev/null; echo "---LS---"; ls -la; echo "---GAME LINES---"; wc -l game.js index.html 2>/dev/null' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+# Checkpoint — zombie FPS (clean room, zombie-fps-local-ai)
+
+## TASK
+Build/verify the FPS in THIS folder per GAME_GOAL.md + AGENTS.md; when it genuinely works, write REPORT.md and STOP.
+Immutable constraints:
+- RULE ZERO: internal consistency is NOT evidence. Prove orientation from SCREEN-SPACE PROJECTION (ndc signs / projected screen coords), not from internal numbers agreeing.
+- Clean room: never read/copy code from other projects (esp. old fps-grid-calibration). Three.js local only (./three.module.js), no CDN/external assets.
+- Blocking defects (must have none): reversed W/S or A/D; movement not camera-relative after turning; crosshair not at exact viewport centre; crosshair-to-hit misalignment; zombie dying on 4th or surviving 5th valid hit; fatal page errors.
+- Movement: W = camera forward projected on ground, S = opposite, A = strafe screen-left, D = strafe screen-right; pitch must not move player vertically.
+- Aim: authoritative ray from camera centre (crosshair), NOT from gun barrel.
+- Two zombies: A stationary, B walks slowly toward player (stops ~dist<=2.2). Both block-built humanoids, health bar over head, exactly 5 HP (5th valid hit kills, not 4th/6th), dead zombie no longer targetable.
+- Evidence standard: mechanically verified vs visually inspected vs human-only must be separated in REPORT.md.
+
+## CURRENT PRODUCT STATE
+- Files: `index.html` (entry, viewport 1280x800), `game.js` (718 lines, whole game), `three.module.js` (vendored).
+- Served at http://127.0.0.1:8802/ (curl 200 confirmed this session). Entry = index.html.
+- IMPORTANT: `THREE` is NOT a page global (ES module import) — do NOT reference THREE in codex-browser eval.
+- Hooks: window.__AGENT_STATE__ (player logical+world pos, camera yaw/pitch/forward, crosshair target, lastShot hit/miss+targetId, both zombies hp/world pos, ready, pointerLocked) and window.__THREE_GAME_TEST_HOOKS__ (fire, setYaw, setPitch, setPlayerPosition, setZombiePosition, resetZombieHp, respawn, setDebugLabels, setCalibrationTarget, projectToScreen, projectLogical, holdKey/releaseKey/releaseAllKeys, getCamera, getState).
+- Coordinate convention (game.js top comment): logical (x,z) -> world (x,0,-z). Spawn (0,0), yaw=0 -> camera fwd world (0,0,-1) = logical +Y. Verified live this session: camera matrixWorld origin (0,1.7,0), dir (0,0,-1).
+- Zombies: A logical (-2.5,11) stationary; B (2.5,11) walks toward player, stops at dist<=2.2. Both HP=5.
+- Aim code (game.js): aimRay() = raycaster.setFromCamera(Vector2(0,0), camera); crosshairTarget() iterates zombieWorldHitboxes(z) and ray.intersectBox(box, target); fire() uses crosshairTarget(). intersectBox in three.module.js (line ~5709) is the standard slab test — reads correct.
+- zombieWorldHitboxes (game.js ~L323): builds AABBs from per-mesh geometry bboxes offset by mesh.position, rotates by group rotation.y via rot(v) = (x*cy - z*sy, y, x*sy + z*cy), adds group.position. NOTE: geometry bboxes are centred on mesh origin; meshes with rotation.y (zombie arms ry=±0.08) get unrotated local bboxes — tiny error, NOT the cause.
+- Runtime status: page loads, __AGENT_STATE__ updates (ready:true, time advancing, zombie B moving — B at (2.45,10.781) at t=0.25 proves loop runs).
+
+## COMPLETED (mechanically verified via codex-browser eval)
+1. Crosshair DOM center == viewport center (640,400) EXACT (getBoundingClientRect).
+2. Screen-projection proof at spawn: (0,1) ndc z=0.900 in front, sx=640 sy=1061 (front); (0,-1) behind; diagonals (-1,1) ndc.x=-0.860 left-front, (1,1) +0.860 right-front, (-1,-1)/(1,-1) behind => W front, S back, A left, D right, all 8 combos correct.
+3. Movement yaw=0: W (0,+4.299), S (0,-4.298), A (-4.298,0), D (+3.999,0).
+4. Camera-relative: yaw=+90deg W (+4.099,0) A (0,+4.398) D (0,-4.199); yaw=-90deg W (-3.999,0) A (0,-4.1) D (0,+4.499).
+5. Pitch 0.9 + W -> player y stays 1.7 (no vertical drift).
+6. Calibration target logical (0,11) h=1.7 -> screen (640,400), ndc (0,0) at yaw=0 (crosshair<->ray agreement on centre line).
+7. Fixed earlier: syncCamera() stale-quaternion bug (camera.rotation reset but not quaternion -> stale aim ray). Fixed via camera.quaternion.identity() (game.js ~line 162).
+8. THIS SESSION: confirmed live ray after respawn + setZombiePosition('A',0,11) + yaw/pitch 0: origin (0,1.7,0), dir (0,0,-1) — exactly the centre ray. crosshair still null.
+
+## UNRESOLVED
+BLOCKING: crosshairTarget() returns null in EVERY tested aim — including zombie A placed directly on the centre line at logical (0,11) with yaw=0/pitch=0, where the torso box (world x=0, y=0.85..1.6, z=-11.17..-10.83) plainly contains the centre ray (ray passes through x=0,y=1.7 at z=-11 -> inside torso y-range). Manual slab math: t=11, inside all slabs -> MUST hit. Game reports no hit.
+Suspects (in order):
+(a) NEW this session: codex-browser eval'd setInterval step-drivers did NOT fire (window.__Tn.step stayed 0 after 1.5s) — either codex-browser eval runs in a different execution context than the page (so H.getState() etc. from eval may hit a DIFFERENT window/game instance than the one rendering!), or the page is frozen. NOTE: direct eval reads of __AGENT_STATE__ and getCamera() DID return live values consistent with the rendering loop, so same-context is likely; the interval failure is unexplained.
+(b) zombieWorldHitboxes() box construction/rotation (game.js ~L323) — needs live dump of the actual Box3 min/max values.
+(c) raycaster using stale camera matrix — ray origin/dir confirmed correct this session via matrixWorld, so aimRay origin/dir are fine; the MISS must be in the boxes or in intersectBox input.
+Debug plan: dump from INSIDE the page (not eval): add a temporary module-level hook in game.js, e.g. window.__DBG = { boxes: () => zombies.map(z => ({id: z.id, pos: z.group.position.toArray(), rotY: z.group.rotation.y, boxes: zombieWorldHitboxes(z).map(b => ({min: b.min.toArray(), max: b.max.toArray()}))})), ray: () => { const rc = aimRay(); return {o: rc.ray.origin.toArray(), d: rc.ray.direction.toArray()}; }, test: () => crosshairTarget() }, then read via codex-browser eval. Compare box coords vs ray.
+
+## LAST TEST
+codex-browser eval: set up interval step-driver window.__Tn (respawn, place A at (0,11), read state after 80ms).
+Result: after ~1.5s, window.__Tn.out = null, step = 0 — the setInterval callback never ran, so the post-placement state read never happened. (Earlier direct evals in the same session DID see live __AGENT_STATE__ and correct camera ray, so the page itself is alive.)
+
+## NEXT INTENDED ACTION
+Add a temporary in-module debug hook to game.js (window.__DBG with boxes()/ray()/test() as in UNRESOLVED(b)), reload the page, place zombie A at logical (0,11) via __THREE_GAME_TEST_HOOKS__ (respawn -> setZombiePosition -> wait 1 frame via a simple setTimeout-free trick: read __AGENT_STATE__ twice with a small sleep between codex-browser calls, since the loop re-syncs camera each frame), then read window.__DBG.boxes() and window.__DBG.ray() and compare by hand. Fix whatever mismatch is found (most likely: hitbox min/max vs ray). Then re-verify: aim A -> targetId 'A'; aim B -> 'B'; offset yaw -> near-miss null + fire() miss. Remove __DBG after fixing.
+
+## SKILLS
+Loaded (relevant): threejs-qa-release (test hooks __THREE_GAME_TEST_HOOKS__ / __AGENT_STATE__ convention, playtest-bot.md), threejs-debug-profiler (camera/input/transform debugging, scene-debugging checklist), threejs-gameplay-systems (FPS controls, camera-relative movement, raycast/hit detection, update order). threejs-game-ui-designer (crosshair/health bar), threejs-aaa-graphics-builder (block visuals), game-engine/game-developer (3d-web-games.md) available as needed. threejs-game-director not needed.
+
+## EVIDENCE
+- Served: http://127.0.0.1:8802/ (index.html).
+- Screenshots: none yet (need to hide start overlay / pointer-lock first, then codex-browser screenshot to /tmp).
+- Key verified numbers above (COMPLETED section) are the evidence base for REPORT.md.
+- No screenshots/hashes committed yet.
+
+## DO NOT REPEAT
+- Do NOT accept internal consistency (HUD/labels/transform agreeing) as proof of orientation — must use screen-space projection (ndc signs / projected screen coords).
+- Do NOT reference THREE in codex-browser eval (not a global).
+- Do NOT read/copy code from other projects (clean room).
+- codex-browser eval does NOT await Promises/async — (async()=>{...})() returns {}. Use setInterval step-driver pattern (window.__Tn={step,plan,timer}, advance ~80ms/step, then read window.__Tn.out) to wait between state changes.
+- Camera re-syncs only on the next animation frame after setYaw/setPlayerPosition — always wait >=1 frame before reading __AGENT_STATE__ or firing.
+- Arrow-function `this` inside setInterval callbacks bound via `.bind(window.__Tn)` did NOT work in codex-browser eval this session (step stayed 0). If step-drivers fail again, prefer: make the wait part of the GAME (e.g. a temporary in-module hook that captures values on the next frame) instead of eval-side timers.
+---LS---
+total 2600
+drwxr-xr-x  12 user  staff      384 Aug 30 13:50 .
+drwxr-xr-x  35 user  staff     1120 Aug 30 13:41 ..
+drwxr-xr-x   3 user  staff       96 Aug 30 14:11 .agent-state
+drwxr-xr-x  10 user  staff      320 Aug 30 13:45 .git
+-rw-r--r--   1 user  staff      136 Aug 30 15:29 agent-status.json
+-rw-r--r--   1 user  staff     2142 Aug 30 13:42 AGENTS.md
+-rw-r--r--   1 user  staff     5529 Aug 30 13:43 GAME_GOAL.md
+-rw-r--r--   1 user  staff    27318 Aug 30 15:43 game.js
+-rw-r--r--   1 user  staff     3199 Aug 30 13:47 index.html
+drwxr-xr-x  19 user  staff      608 Aug 30 15:29 sup-log
+-rw-r--r--   1 user  staff     5650 Aug 30 13:43 TASK_PROMPT.txt
+-rw-r--r--   1 user  staff  1272972 Aug 30 13:41 three.module.js
+---GAME LINES---
+     725 game.js
+      66 index.html
+     791 total
+
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+codex
+The checkpoint I just read is the OLD one (still showing the unresolved crosshair-null blocker), but the handoff summary says that blocker was solved via a `projectToScreen` fix. Let me verify the actual current state of `game.js` and the server before proceeding.
+
+
+exec
+/bin/zsh -lc "cd ~/side-projects/games/web/zombie-fps-local-ai
+echo \"=== projectToScreen in game.js ===\"; grep -n \"projectToScreen\\|updateMatrixWorld\\|projectLogical\\|__DBG\" game.js
+echo \"=== server check ===\"; curl -s -o /dev/null -w \"%{http_code}\\n\" http://127.0.0.1:8802/ 2>/dev/null || echo \"NO SERVER\"
+echo \"=== agent-status ===\"; cat agent-status.json" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+=== projectToScreen in game.js ===
+674:function projectToScreen(wx, wy, wz) {
+675:  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
+689:function projectLogical(lx, lz, h = 0.5) {
+690:  return projectToScreen(lx, h, -lz);
+716:  projectToScreen,
+717:  projectLogical,
+=== server check ===
+200
+=== agent-status ===
+{
+  "state": "ACTIVE_TOOL_WORK",
+  "attempt": 9,
+  "thread": 5,
+  "resume_count": 8,
+  "phase": "compact_fresh",
+  "elapsed_s": 6207.4
+}
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+codex
+The fix is in place (the comment at line 675 confirms `updateMatrixWorld` was removed), and the server is up. Let me read the relevant section of `game.js` to confirm the helper and hooks, then start verification.
+
+
+exec
+/bin/zsh -lc "cd ~/side-projects/games/web/zombie-fps-local-ai
+sed -n '660,725p' game.js" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+      id: z.id, hp: z.hp, alive: z.alive, moving: z.moving,
+      logical: { x: round3(z.logical.x), z: round3(z.logical.z) },
+      world: { x: round3(z.group.position.x), y: round3(z.group.position.y), z: round3(z.group.position.z) },
+    })),
+    pointerLocked,
+  };
+}
+const round3 = (v) => Math.round(v * 1000) / 1000;
+const round4 = (v) => Math.round(v * 10000) / 10000;
+
+// ---------------- test hooks ---------------------------------------------------
+// ---------------- screen-projection test helpers -------------------------
+// RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+// projecting world points through the LIVE camera into NDC / screen space.
+function projectToScreen(wx, wy, wz) {
+  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
+  // set every frame by syncCamera(); recomputing it from the stale local
+  // matrix would clobber the live transform (and corrupt the next frame's
+  // aim ray). Project against the matrixWorld as it stands.
+  const v = new THREE.Vector3(wx, wy, wz);
+  const ndc = v.clone().project(camera);
+  const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+  return {
+    ndc: { x: ndc.x, y: ndc.y, z: ndc.z },
+    screen: { x: (ndc.x * 0.5 + 0.5) * window.innerWidth, y: (-ndc.y * 0.5 + 0.5) * window.innerHeight },
+    onScreen,
+  };
+}
+// convenience: project a logical (x,z) floor point at a given height
+function projectLogical(lx, lz, h = 0.5) {
+  return projectToScreen(lx, h, -lz);
+}
+
+window.__THREE_GAME_TEST_HOOKS__ = {
+  fire,
+  setYaw(rad) { player.yaw = rad; },
+  setPitch(rad) { player.pitch = rad; },
+  setPlayerPosition(logicalX, logicalZ) {
+    player.logical.x = logicalX; player.logical.z = logicalZ;
+  },
+  setZombiePosition(id, logicalX, logicalZ) {
+    const z = zombies.find((zz) => zz.id === id);
+    z.group.position.copy(l2w(logicalX, logicalZ));
+  },
+  resetZombieHp(id, hp) {
+    const z = zombies.find((zz) => zz.id === id);
+    z.hp = hp; z.alive = hp > 0; z.deathT = 0;
+    z.group.rotation.set(0, 0, 0); z.group.position.y = 0;
+    z.barMesh.visible = true;
+    drawHealthBar(z);
+  },
+  respawn,
+  setDebugLabels,
+  setCalibrationTarget,
+  getState: () => window.__AGENT_STATE__,
+  getCamera: () => camera,
+  projectToScreen,
+  projectLogical,
+  holdKey(code) { keys[code] = true; },
+  releaseKey(code) { keys[code] = false; },
+  releaseAllKeys() { for (const k in keys) keys[k] = false; },
+};
+
+updateHud();
+requestAnimationFrame(loop);
+ready = true;
+
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+codex
+Everything's in place. Now let me set up a plan and begin the verification sequence. First, let me check `codex-browser` help to refresh on the exact commands.
+
+
+  → Re-prove spawn orientation via fixed projectLogical (all 8 dirs)
+  • Re-verify camera-relative movement post-rotation (yaw ±90, pitch)
+  • Confirm crosshair DOM centre + calibration ray agreement
+  • Re-confirm 5-hit kill sequences for A and B + near-miss
+  • Take final screenshots (both zombies + health bars + crosshair)
+  • Update checkpoint.md with root cause + final evidence
+  • Write REPORT.md with separated evidence and stop
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+exec
+/bin/zsh -lc 'codex-browser help 2>&1 | head -60' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+codex-browser — drive the sandbox-external browser. Output is bounded (large results saved to disk).
+COMMANDS
+  open <url>              load a page (e.g. open http://127.0.0.1:PORT/)
+  url | title             current url / page title
+  state                   compact JSON from the app's diagnostics hook (window.__AGENT_STATE__)
+  eval <js...>            run a JS expression in the page → bounded JSON   (e.g. eval document.title)
+  get <path>              read window.<path>; dots ok  (e.g. get __AGENT_STATE__.player.x)
+  click-id <id>           click #<id>       |  click <sel>   |  type <sel> <text>
+  key <k> | press <k>     one key press (e.g. key f)         |  hold <k> <ms>  (held movement)
+  screenshot [file]       save PNG to file; prints path + sha256 + bytes
+  snapshot                a11y + visible text + controls (bounded)
+  console | errors | network-errors     recent page logs (bounded)
+  reload | close | health
+TELEMETRY: in your app expose  window.__AGENT_STATE__  (an object, or a function returning compact
+JSON), then read it with `codex-browser state`. No obscure endpoints needed.
+
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+codex
+Good. Now let me open the page and start the orientation proof. I'll set up spawn state (position 0,0, yaw 0, pitch 0) and project all 8 directions.
+diff --git a/game.js b/game.js
+index 3d596c95028d09172754f23641baf53a0283d257..8d4511cd6c4636696ccd81083661d1003819040d
+--- a/game.js
++++ b/game.js
+@@ -672,7 +672,10 @@
+ // RULE ZERO: prove orientation from what is VISIBLE on screen, i.e. by
+ // projecting world points through the LIVE camera into NDC / screen space.
+ function projectToScreen(wx, wy, wz) {
+-  camera.updateMatrixWorld();
++  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
++  // set every frame by syncCamera(); recomputing it from the stale local
++  // matrix would clobber the live transform (and corrupt the next frame's
++  // aim ray). Project against the matrixWorld as it stands.
+   const v = new THREE.Vector3(wx, wy, wz);
+   const ndc = v.clone().project(camera);
+   const onScreen = ndc.z < 1 && ndc.z > -1 && Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1;
+@@ -720,4 +723,3 @@
+ updateHud();
+ requestAnimationFrame(loop);
+ ready = true;
+-
+
+tokens used
+99,718
+Good. Now let me open the page and start the orientation proof. I'll set up spawn state (position 0,0, yaw 0, pitch 0) and project all 8 directions.

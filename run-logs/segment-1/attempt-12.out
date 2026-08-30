@@ -1,0 +1,81 @@
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: high
+reasoning summaries: none
+session id: 01a05192-aec3-7cf0-8bd0-2275007c42d5
+--------
+user
+Continue the current task from where you stopped. Execute the next required step now, and keep working until the task's completion criteria are satisfied, or you reach a genuine blocker you cannot resolve yourself (in which case state it explicitly).
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+exec
+/bin/zsh -lc "codex-browser eval \"
+(function(){
+  var H=window.__THREE_GAME_TEST_HOOKS__;
+  var out={};
+  [['A',-2,0],['D',2,0]].forEach(function(d){
+    var p=H.projectLogical(d[1],d[2],0.5);
+    out[d[0]]={ndcRaw:p.ndc, screenRaw:p.screen, onScreen:p.onScreen};
+  });
+  return out;
+})()
+\" 2>&1" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": {
+    "A": {
+      "ndcRaw": {
+        "x": null,
+        "y": null,
+        "z": null
+      },
+      "screenRaw": {
+        "x": null,
+        "y": null
+      },
+      "onScreen": false
+    },
+    "D": {
+      "ndcRaw": {
+        "x": null,
+        "y": null,
+        "z": null
+      },
+      "screenRaw": {
+        "x": null,
+        "y": null
+      },
+      "onScreen": false
+    }
+  }
+}
+
+codex
+The raw ndc is genuinely `null` for A/D at (±2,0). That means `v.project(camera)` is returning a vector with NaN/null components. This is the degenerate side-on case: a point at (±2, 0.5, 0) in world — wait, logical (±2,0) → world (±2, 0.5, -0). The camera is at (0,1.7,0) looking toward -Z. A point at world x=±2, z=0 is directly to the side, in the camera's local plane where the view-space z (depth) is 0 → division by zero in projection → NaN.
+
+So `project()` legitimately gives NaN for points exactly in the near-plane (depth≈0). My earlier "horiz: left/right" was a bug in my own logic (NaN<0 is false, NaN>0 is false, so it fell to... actually it returned 'left' for A — that's wrong, must have been stale). Let me not rely on that.
+
+The correct approach: A/D are pure lateral directions at the player's own position, so they're always in the near-plane and can't be projected. Instead, I should prove A/D by projecting a point that is *behind the camera's facing but offset sideways* — i.e., combine with forward. But the task explicitly wants A and D alone proven as "visibly left" / "visibly right."
+
+The robust way: project a point at logical (±1, -0.5) — slightly *behind* (so it's in front of the camera's back, giving a valid depth) — no. Better: the standard fix is to project a point offset slightly toward the camera so depth > 0. Let me project (±1, 0) but at a height and pull it slightly in +Z world (toward camera) so it's not exactly in the near plane. Actually the cleanest: project the *movement direction* by looking at where a point at (±1, 0) would appear relative to screen centre when it has any depth. 
+
+Let me instead verify A/D using the camera's right vector directly (screen-space): the camera's world right vector projected tells us screen-left/right. But RULE ZERO wants screen projection. 
+
+The truly correct screen-space proof for pure strafe: a point exactly lateral has zero depth, so it projects to infinity (off-screen) — that's mathematically expected and not a defect. To make it projectable, give it a tiny depth by moving it a hair toward the camera (world +Z by 0.01). Let me try logical (±1, -0.01) → world (±1, 0.5, +0.01), which is 1cm in front of the near plane.
+tokens used
+116,571
+The raw ndc is genuinely `null` for A/D at (±2,0). That means `v.project(camera)` is returning a vector with NaN/null components. This is the degenerate side-on case: a point at (±2, 0.5, 0) in world — wait, logical (±2,0) → world (±2, 0.5, -0). The camera is at (0,1.7,0) looking toward -Z. A point at world x=±2, z=0 is directly to the side, in the camera's local plane where the view-space z (depth) is 0 → division by zero in projection → NaN.
+
+So `project()` legitimately gives NaN for points exactly in the near-plane (depth≈0). My earlier "horiz: left/right" was a bug in my own logic (NaN<0 is false, NaN>0 is false, so it fell to... actually it returned 'left' for A — that's wrong, must have been stale). Let me not rely on that.
+
+The correct approach: A/D are pure lateral directions at the player's own position, so they're always in the near-plane and can't be projected. Instead, I should prove A/D by projecting a point that is *behind the camera's facing but offset sideways* — i.e., combine with forward. But the task explicitly wants A and D alone proven as "visibly left" / "visibly right."
+
+The robust way: project a point at logical (±1, -0.5) — slightly *behind* (so it's in front of the camera's back, giving a valid depth) — no. Better: the standard fix is to project a point offset slightly toward the camera so depth > 0. Let me project (±1, 0) but at a height and pull it slightly in +Z world (toward camera) so it's not exactly in the near plane. Actually the cleanest: project the *movement direction* by looking at where a point at (±1, 0) would appear relative to screen centre when it has any depth. 
+
+Let me instead verify A/D using the camera's right vector directly (screen-space): the camera's world right vector projected tells us screen-left/right. But RULE ZERO wants screen projection. 
+
+The truly correct screen-space proof for pure strafe: a point exactly lateral has zero depth, so it projects to infinity (off-screen) — that's mathematically expected and not a defect. To make it projectable, give it a tiny depth by moving it a hair toward the camera (world +Z by 0.01). Let me try logical (±1, -0.01) → world (±1, 0.5, +0.01), which is 1cm in front of the near plane.

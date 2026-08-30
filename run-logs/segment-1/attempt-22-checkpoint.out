@@ -1,0 +1,147 @@
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: high
+reasoning summaries: none
+session id: 01a05192-aec3-7cf0-8bd0-2275007c42d5
+--------
+user
+CONTEXT CHECKPOINT — you are about to hand this task off to a FRESH session (to avoid context exhaustion). Write or refresh ./.agent-state/checkpoint.md NOW, concise and machine-usable, with exactly these sections, then STOP (do no other work):
+## TASK — original objective + immutable constraints
+## CURRENT PRODUCT STATE — key files, architecture, current runtime status
+## COMPLETED — milestones already verified
+## UNRESOLVED — concrete current defects + the evidence for them
+## LAST TEST — the command/action you last ran and its result
+## NEXT INTENDED ACTION — the single immediate next step
+## SKILLS — which Skills you loaded and which methods are currently relevant
+## EVIDENCE — important paths / hashes / screenshots
+## DO NOT REPEAT — approaches already disproven
+Write the file and stop.
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+codex
+I'll write the checkpoint file now with the current verified state.
+
+
+exec
+/bin/zsh -lc 'cd ~/side-projects/games/web/zombie-fps-local-ai; ls -la .agent-state/; echo "---"; wc -l game.js index.html' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+total 24
+drwxr-xr-x   3 user  staff    96 Aug 30 14:11 .
+drwxr-xr-x  12 user  staff   384 Aug 30 13:50 ..
+-rw-r--r--   1 user  staff  9019 Aug 30 14:39 checkpoint.md
+---
+     725 game.js
+      66 index.html
+     791 total
+
+exec
+/bin/zsh -lc "cd ~/side-projects/games/web/zombie-fps-local-ai
+cat > .agent-state/checkpoint.md << 'EOF'
+# Checkpoint — zombie FPS (clean room, zombie-fps-local-ai)
+
+## TASK
+Build/verify the FPS in THIS folder per GAME_GOAL.md + AGENTS.md. When it genuinely works, write REPORT.md and STOP.
+Immutable constraints:
+- RULE ZERO: internal consistency is NOT evidence. Orientation MUST be proven from SCREEN-SPACE PROJECTION (ndc signs / projected screen coords), not from internal numbers agreeing.
+- Clean room: never read/copy code from other projects (esp. old "'`fps-grid-calibration`). Three.js local only (`./three.module.js`), no CDN/external assets.
+- Blocking defects (must have NONE): reversed W/S or A/D vs what the player sees; movement not camera-relative after turning; crosshair not at exact viewport centre; crosshair-to-hit misalignment; zombie dying on 4th or surviving 5th valid hit; fatal page errors.
+- Movement: W = camera forward projected onto ground, S = opposite, A = strafe screen-left, D = strafe screen-right; pitch must NOT move player vertically.
+- Aim: authoritative ray from camera CENTRE (crosshair), NOT from gun barrel.
+- Two zombies: A stationary, B walks slowly toward player (stops ~dist<=2.2). Both block-built humanoids, health bar over head, exactly 5 HP (5th valid hit kills, not 4th/6th), dead zombie no longer targetable.
+- Evidence standard: separate mechanically verified / visually inspected / human-only in REPORT.md.
+
+## CURRENT PRODUCT STATE
+- Files: `index.html` (entry, viewport 1280x800), `game.js` (725 lines, whole game, ES module), `three.module.js` (vendored). Served `http://127.0.0.1:8802/` (curl 200).
+- Coordinate convention: logical (x,z) -> world (x, 0, -z). Spawn (0,0), yaw=0 -> camera fwd world (0,0,-1) = logical +Y.
+- `THREE` is NOT a page global (ES module import) — do NOT reference THREE in codex-browser eval. Use `H.getCamera()` and vector ctor via `cam.position.constructor`.
+- Hooks: `window.__AGENT_STATE__` (player logical+world, camera yaw/pitch/forward/position, crosshair {targetId,point,dist}, lastShot {hit,targetId,hpAfter,t}, kills, zombies[] {id,hp,alive,moving,logical,world}, ready, pointerLocked). `window.__THREE_GAME_TEST_HOOKS__` = `H`: fire, setYaw(rad), setPitch(rad), setPlayerPosition(lx,lz), setZombiePosition(id,lx,lz), resetZombieHp(id,hp), respawn, setDebugLabels, setCalibrationTarget(bool), getState, getCamera, projectToScreen(wx,wy,wz), projectLogical(lx,lz,h=0.5), holdKey(code), releaseKey(code), releaseAllKeys.
+- `fire()` gate: `if(!player.alive||!ready) return; if(fireCooldown>0) return;` — cooldown ~0.09s. Always wait >=0.25s between manual fire() calls in test sequences.
+- Zombie B stops moving at dist<=2.2 from player (moving=false after that).
+
+## COMPLETED (mechanically verified via codex-browser eval vs live page)
+1. **Spawn orientation (RULE ZERO screen-projection proof)** — spawn (0,0), yaw=0, pitch=0, camera fwd world (0,0,-1)=logical +Y:
+   - W (0,1): ndc.z=0.9<1, ndc.x=0 -> front/centre ✓
+   - S (0,-1): ndc.z=1.101>1 -> behind ✓
+   - A (-1,0) & D (1,0): pure-lateral points are in the near-plane -> project() yields NaN (expected math, NOT a bug). Proven via forward+diagonal points instead: diagForwardLeft ndc.x=-0.86 (screen left, sx=89), diagForwardRight ndc.x=+0.86 (screen right, sx=1191); camera rightWorld=(1,0,0). -> A=left, D=right ✓
+   - Diagonals: WA(-1,1) ndc.x=-0.86 left-front; WD(1,1) +0.86 right-front; SA/SD ndc.z=1.101 behind ✓
+   - **All 8 directions correct.**
+2. **Camera-relative movement** (holdKey + ~0.5s sleep + read `__AGENT_STATE__.player.logical`):
+   - yaw=0: W (0,+4.299), S (0,-4.298), A (-4.298,0), D (+3.999,0) ✓
+   - yaw=+90deg: W (+4.099,0), A (0,+4.398), D (0,-4.199) ✓
+   - yaw=-90deg: W (-3.999,0), A (0,-4.1), D (0,+4.499) ✓
+   - pitch=0.9 + W: playerY stays 1.7 (no vertical drift), moved z=+3.499 ✓
+3. **Crosshair DOM centre** = (640,400) = exact viewport centre (1280x800) ✓
+4. **Calibration ray agreement**: projectLogical(0,11,1.7) -> ndc(0,0), screen(640,400) = crosshair centre ✓
+5. **Core aim (crosshair->hit) works in fixed build** (re-confirmed THIS session): respawn, setZombiePosition('"'A',0,11), yaw=0/pitch=0, player (0,0) -> crosshair {targetId:'A', point (0,1.7,-10.79), dist 10.79} ✓
+6. **Near-miss (crosshair->no-hit) re-confirmed THIS session**: A at logical (1,11), yaw=0/pitch=0 -> crosshair=null, lastShot {hit:false,targetId:null} ✓ (A off-centre is NOT hit by centre ray)
+7. **Zombie A 5-hit kill (verified last session)**: respawn, A at (0,11), yaw/pitch 0, player (0,0). Crosshair target='A'. Fired 5x (0.25s gaps): hp 5->4->3->2->1->0, alive:false on the 5th hit. lastShot each time {hit:true,targetId:'A',hpAfter:...}. -> dies exactly on 5th valid hit (not 4th, not 6th) ✓ BLOCKING DEFECT #5 ABSENT.
+8. **projectToScreen root-cause fix** (game.js ~line 674): previously called camera.updateMatrixWorld(), which recomputed matrixWorld from the stale local matrix and clobbered the live camera transform (set each frame by syncCamera()), corrupting the next frame's aim ray -> phantom \"crosshairTarget() returns null\". Fix: removed that call; now projects against live camera.matrixWorld. Confirmed in place this session.
+
+## UNRESOLVED
+None blocking. Remaining work is FINALIZATION only:
+- Zombie B 5-hit kill sequence (not yet run in the fixed build).
+- Confirm dead zombie A is no longer targetable (crosshair null / fire miss after A dead).
+- Screenshots (2): both zombies + health bars + crosshair at centre; optional mid-kill reduced bar / hit flash.
+- Write REPORT.md.
+
+## LAST TEST
+Near-miss re-confirm: "'`H.setZombiePosition('"'A',1,11); H.setYaw(0); H.setPitch(0);"'` then read `__AGENT_STATE__` -> crosshair=null, lastShot {hit:false,targetId:null}. PASS (off-centre A not hit by centre ray). Immediately prior, A at (0,11) gave crosshair targetId='"'A'. Both confirm crosshair-to-hit alignment + near-miss in the fixed build.
+
+## NEXT INTENDED ACTION
+1. **Zombie B 5-hit kill**: respawn -> "'`H.setZombiePosition('"'B',0,11)"'` (B walks, so place at centre) -> `H.setYaw(0); H.setPitch(0); H.setPlayerPosition(0,0)` -> wait >=1 frame -> confirm crosshair targetId='"'B' -> fire 5x with >=0.25s gaps (shell "'`sleep 0.3` between codex-browser eval fire() calls) -> read `__AGENT_STATE__` after each: expect hp 5->4->3->2->1->0, alive:false on 5th, kills increments.
+2. **Dead-A-not-targetable**: with A dead (hp 0) at (0,11) and B elsewhere, confirm crosshair does NOT return '"'A' and fire() -> hit:false for A. (Simplest: after B-kill test, respawn, kill A to 0 via 5 fires, then move B away, aim at (0,11) -> crosshair null.)
+3. **Screenshots**: hide overlay "'`document.getElementById('"'start').style.display='none'"'` (pointer-lock can'"'t engage headless; pointerLocked=false is fine, logic still runs). respawn so both alive. Shot 1: both zombies + health bars + crosshair at centre -> "'`codex-browser screenshot /tmp/shot-1.png`. Shot 2 (optional): mid-kill showing reduced bar / hit flash -> `/tmp/shot-2.png`. `codex-browser screenshot` prints path+sha256+bytes.
+4. **Update this checkpoint** with the B-kill numbers + screenshot hashes.
+5. **Write REPORT.md** with evidence split into mechanically verified (all numbers above + orientation table + both 5-hit sequences + near-miss), visually inspected (screenshots), human-only (real pointer-lock/mouse-look feel — cannot automate). Include the screen-projection proof table and the two 5-hit sequences.
+6. **Stop.**
+
+## SKILLS
+Loaded (relevant): threejs-qa-release (test hooks __THREE_GAME_TEST_HOOKS__ / __AGENT_STATE__ convention, references/playtest-bot.md — automated playtest). threejs-debug-profiler (camera/input/transform debugging, references/debug-profile-checklists.md, references/checklists/scene-debugging.md). threejs-gameplay-systems (FPS controls, camera-relative movement, raycast/hit detection, update order, references/gameplay-workflows.md). threejs-game-ui-designer (crosshair/health bar). threejs-aaa-graphics-builder (block visuals). game-engine/game-developer (references/3d-web-games.md). threejs-game-director not needed.
+
+## EVIDENCE
+- Served: http://127.0.0.1:8802/ (index.html). curl 200.
+- Screenshots: none yet (need to hide start overlay, then codex-browser screenshot to /tmp).
+- Key verified numbers in COMPLETED section are the evidence base for REPORT.md.
+- No screenshot hashes committed yet.
+
+## DO NOT REPEAT
+- Do NOT accept internal consistency (HUD/labels/transform agreeing) as proof of orientation — must use screen-space projection (ndc signs / projected screen coords).
+- Do NOT reference THREE in codex-browser eval (not a global).
+- Do NOT read/copy code from other projects (clean room).
+- codex-browser eval does NOT await Promises/async — (async()=>{...})() returns {}. Use synchronous calls + shell `sleep` between separate codex-browser invocations so the rAF loop advances >=1 frame (camera re-syncs each frame). The old setInterval step-driver pattern was UNRELIABLE (callbacks never fired) — avoid it.
+- Camera re-syncs only on the next animation frame after setYaw/setPlayerPosition/setZombiePosition — always wait >=1 frame (shell sleep ~0.3-1s) before reading __AGENT_STATE__ or firing.
+- Pure-lateral projection is NaN (point in near-plane) — expected math, NOT a bug; prove A/D via forward+diagonal points or the camera right vector.
+- Never call camera.updateMatrixWorld() (or any transform recompute) from eval-side helpers between frames — it clobbers the live camera transform set by syncCamera() each frame.
+- Pointer lock can'"'t be engaged headlessly; hide #start to screenshot in-game view.
+- fire() within the ~0.09s cooldown window is a no-op — always wait >=0.25s between fire() calls in test sequences.
+EOF
+echo \"written\"; wc -l .agent-state/checkpoint.md" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+written
+      77 .agent-state/checkpoint.md
+
+codex
+Checkpoint written to `./.agent-state/checkpoint.md` with all nine required sections.
+
+Key state captured:
+- **Fixed build confirmed in place** — the `projectToScreen` root-cause fix (removed `camera.updateMatrixWorld()`) is at `game.js:674`, page live at `http://127.0.0.1:8802/`.
+- **Re-verified this session**: core aim (A at centre → `crosshair.targetId='A'`), near-miss (A off-centre → `crosshair=null`, `lastShot.hit=false`), plus the prior orientation / camera-relative / 5-hit-A evidence.
+- **NEXT INTENDED ACTION**: zombie B 5-hit kill → dead-A-not-targetable → 2 screenshots → update checkpoint with B numbers + hashes → write `REPORT.md` → stop.
+- **UNRESOLVED**: none blocking — only finalization (B-kill, dead-target check, screenshots, REPORT.md).
+
+Stopping here as instructed.
+tokens used
+178,156
+Checkpoint written to `./.agent-state/checkpoint.md` with all nine required sections.
+
+Key state captured:
+- **Fixed build confirmed in place** — the `projectToScreen` root-cause fix (removed `camera.updateMatrixWorld()`) is at `game.js:674`, page live at `http://127.0.0.1:8802/`.
+- **Re-verified this session**: core aim (A at centre → `crosshair.targetId='A'`), near-miss (A off-centre → `crosshair=null`, `lastShot.hit=false`), plus the prior orientation / camera-relative / 5-hit-A evidence.
+- **NEXT INTENDED ACTION**: zombie B 5-hit kill → dead-A-not-targetable → 2 screenshots → update checkpoint with B numbers + hashes → write `REPORT.md` → stop.
+- **UNRESOLVED**: none blocking — only finalization (B-kill, dead-target check, screenshots, REPORT.md).
+
+Stopping here as instructed.

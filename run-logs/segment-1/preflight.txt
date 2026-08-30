@@ -1,0 +1,3 @@
+CODEX_BROWSER_AVAILABLE: YES (/opt/homebrew/bin/codex-browser)
+CODEX_BROWSER=~/qa-research/codex-ab/browser-sidecar/bin/codex-browser
+CODEX_BROWSER_BROKER: UP

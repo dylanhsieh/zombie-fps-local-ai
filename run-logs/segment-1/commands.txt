@@ -1,0 +1,18 @@
+# LAUNCH MODE: non-interactive (Agent Turn Supervisor). Controllable PTY unavailable.
+CODEX_HOME=~/qa-baseline/external-knowledge/codex-home-robot-tps
+PATH=~/qa-research/codex-ab/browser-sidecar/bin:/opt/homebrew/bin:$PATH
+serve: (cd ~/side-projects/games/web/zombie-fps-local-ai && python3 -m http.server 8802 --bind 127.0.0.1)   # http://127.0.0.1:8802/
+codex: ~/qa-research/codex-experiment/node_modules/.bin/codex  (codex-cli 0.149.1)
+
+# EFFECTIVE INITIAL TURN:
+~/qa-research/codex-experiment/node_modules/.bin/codex exec -s workspace-write -c sandbox_workspace_write.network_access=true -c model_context_window=47616 -c model_reasoning_effort="xhigh" --skip-git-repo-check "<contents of ~/side-projects/games/web/zombie-fps-local-ai/TASK_PROMPT.txt>"
+# CONTINUATION TURNS: ~/qa-research/codex-experiment/node_modules/.bin/codex exec resume --last --skip-git-repo-check "<neutral continuation>"
+# FRESH-THREAD COMPACT_RESUME (context pressure): ~/qa-research/codex-experiment/node_modules/.bin/codex exec -s workspace-write -c sandbox_workspace_write.network_access=true -c model_context_window=47616 -c model_reasoning_effort="xhigh" --skip-git-repo-check "<prompt + checkpoint pointer>"
+
+# SUPERVISOR (actually executed):
+python3 ~/qa-research/agent-turn-supervisor/turn_supervisor.py --codex ~/qa-research/codex-experiment/node_modules/.bin/codex --codex-home ~/qa-baseline/external-knowledge/codex-home-robot-tps --cwd ~/side-projects/games/web/zombie-fps-local-ai \
+  --prompt-file ~/side-projects/games/web/zombie-fps-local-ai/TASK_PROMPT.txt --done-check 'test -f REPORT.md' \
+  --attempt-timeout 2700 --global-budget-s 14400 --max-resumes 40 \
+  --compact-after-compactions 2 --agent-state-dir .agent-state \
+  --status-file ~/side-projects/games/web/zombie-fps-local-ai/agent-status.json --log-dir ~/side-projects/games/web/zombie-fps-local-ai/sup-log \
+  --codex-args="-s workspace-write -c sandbox_workspace_write.network_access=true -c model_context_window=47616 -c model_reasoning_effort="xhigh" --skip-git-repo-check"

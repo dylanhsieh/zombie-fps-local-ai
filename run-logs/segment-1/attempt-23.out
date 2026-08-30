@@ -1,0 +1,509 @@
+Reading additional input from stdin...
+OpenAI Codex v0.149.1
+--------
+workdir: ~/side-projects/games/web/zombie-fps-local-ai
+model: C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf
+provider: qwen-local
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR] (network access enabled)
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a051a9-a2b6-7242-b1b6-7b7edc788335
+--------
+user
+Before substantive implementation, inspect the installed Skills relevant to this task, read their SKILL.md content, and apply their methods where materially useful.
+
+Priority for this run:
+  1. threejs-qa-release       — deterministic test hooks (__THREE_GAME_TEST_HOOKS__ / __AGENT_STATE__ convention),
+                                automated playtest. Read references/playtest-bot.md. This is how you PROVE things.
+  2. threejs-debug-profiler   — first-person camera/input debugging, transforms, pointer behaviour.
+                                Read references/debug-profile-checklists.md and references/checklists/scene-debugging.md.
+  3. threejs-gameplay-systems — FPS controls, camera-relative movement, raycast/hit detection, update order,
+                                game feel. Read references/gameplay-workflows.md.
+  4. threejs-game-ui-designer — centre crosshair and floating health-bar UI.
+  5. threejs-aaa-graphics-builder — readable block-built visuals, lighting/material variation.
+  6. game-engine / game-developer — general 3D web game techniques (references/3d-web-games.md).
+Use threejs-game-director only if it materially helps. Do not force irrelevant Skills.
+
+Then read GAME_GOAL.md and AGENTS.md in this folder and build what GAME_GOAL.md specifies.
+
+This folder is served at THE_URL_BELOW — put your entry HTML at index.html and open that URL to test.
+Three.js is vendored locally at ./three.module.js (no CDN needed, no external assets).
+
+=== THE SINGLE MOST IMPORTANT THING ===
+A PREVIOUS BUILD WAS MATHEMATICALLY SELF-CONSISTENT AND STILL WRONG. Its player transform, its HUD, and its
+ground-tile labels all agreed with each other perfectly — and on screen, front/back were reversed and
+left/right were reversed. The human player experienced it as backwards.
+
+So: INTERNAL CONSISTENCY IS NOT EVIDENCE OF CORRECTNESS. Three internal sources agreeing proves nothing about
+what the player sees. You must prove orientation from SCREEN-SPACE PROJECTION.
+
+At spawn the player is at logical (0,0) looking toward logical +Y:
+   W -> (0,1) must be VISIBLY IN FRONT      S -> (0,-1) behind
+   A -> (-1,0) must be VISIBLY ON THE LEFT  D -> (1,0) visibly on the RIGHT
+   W+A (-1,1)   W+D (1,1)   S+A (-1,-1)   S+D (1,-1)
+
+You must prove the visible directions are correct, and it is your responsibility to choose how. Whatever
+method you pick, it must reflect what actually appears on screen rather than internal numbers agreeing with
+each other. If the directions come out swapped, the build is reversed no matter what your HUD says.
+
+=== CAMERA-RELATIVE MOVEMENT (this is a real FPS) ===
+After the player turns with the mouse: W = camera facing projected onto the ground; S = opposite;
+A = strafe screen-LEFT; D = strafe screen-RIGHT. Looking up/down must not move the player vertically.
+Verify at initial facing, after ~90 deg right, and after ~90 deg left. Reversed A/D or W/S is BLOCKING.
+
+=== CROSSHAIR-TO-HIT (BLOCKING) ===
+Crosshair at the EXACT viewport centre. What the crosshair covers must be what the shot hits. Derive the
+authoritative aim ray from the camera centre, NOT from a decorative gun barrel (the muzzle may be visually
+offset; hit detection must follow the crosshair). Build an aiming calibration target and prove the ray and the
+crosshair agree. Also prove a near-miss: aim just beside a zombie -> no hit registered.
+
+=== THE GAME ===
+One large indoor room, block-built floor, player near one end, exactly TWO zombies on the far side, both
+visible soon after spawn. First person: mouse look + pointer lock, camera-relative WASD, centre crosshair,
+block-built fake arms + machine gun, infinite ammo, rapid fire while held.
+Zombie A stands still. Zombie B walks slowly toward the player. Both: block-built humanoid silhouette, health
+bar above the head, exactly 5 HP — each valid hit removes 1, dies on the 5th (not 4th, not 6th), readable hit
+feedback, obvious death feedback, dead zombie stops being a live target.
+Visuals: multiple blocks per body, decent silhouettes, lighting/material variation — better than bare cubes.
+
+=== TEST HOOKS ===
+Expose window.__AGENT_STATE__ with: player logical+world position, camera yaw, camera forward vector,
+crosshair target, last shot hit/miss + target id, both zombies' health/positions, ready. Plus a deterministic
+fire() and a way to set yaw/position for testing. Keep hooks working even when debug visuals are hidden.
+
+=== SUGGESTED ORDER ===
+room + first-person camera -> correct initial facing -> verify initial WASD by screen projection ->
+camera-relative movement -> verify after rotation -> centre crosshair -> centre-view ray -> calibration target
+and prove crosshair/ray agreement -> hands + gun -> two zombies -> health bars -> 5-hit death ->
+Zombie B slow approach -> visual polish -> full runtime verification.
+
+=== VERIFICATION STANDARD ===
+BUILD PASS is not GAMEPLAY VERIFIED. PAGE LOADS is not FPS VERIFIED. RAYCAST EXISTS is not CROSSHAIR ALIGNMENT
+VERIFIED. Use codex-browser (`codex-browser help`) to open the page, read state, eval expressions, send keys,
+and screenshot. Separate mechanically verified / visually inspected / human-only (real pointer-lock feel).
+
+=== STOP CONDITION ===
+When the game genuinely works — correct human-visible movement, camera-relative movement, centre crosshair,
+crosshair-to-hit alignment, machine gun, infinite ammo, two zombies (one stationary, one approaching), health
+bars, exactly five hits to kill, runtime verified, no fatal page errors — write REPORT.md with your evidence
+(including the screen-projection proof and the 5-hit sequences) and stop. Do not stop after scaffolding.
+
+
+--- CONTINUATION (fresh session; the previous thread was compacted to avoid context exhaustion) ---
+You are NOT starting over. Your work already exists in the project files, and a progress checkpoint is in ./.agent-state/checkpoint.md. READ ./.agent-state/checkpoint.md FIRST, then continue the SAME task from its NEXT INTENDED ACTION. Do not rebuild from scratch. Your installed Skills are still available — reopen a SKILL.md only if you actually need it.
+warning: Model metadata for `C:\Users\User\llama-ai\Qwen3.8-27B.i1-IQ4_KT-attn_qkv-IQ4_KS.gguf` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.
+warning: Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+exec
+/bin/zsh -lc 'cat .agent-state/checkpoint.md 2>/dev/null; echo "---"; ls -la' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+# Checkpoint — zombie FPS (clean room, zombie-fps-local-ai)
+
+## TASK
+Build/verify the FPS in THIS folder per GAME_GOAL.md + AGENTS.md. When it genuinely works, write REPORT.md and STOP.
+Immutable constraints:
+- RULE ZERO: internal consistency is NOT evidence. Orientation MUST be proven from SCREEN-SPACE PROJECTION (ndc signs / projected screen coords), not from internal numbers agreeing.
+- Clean room: never read/copy code from other projects (esp. old `fps-grid-calibration`). Three.js local only (`./three.module.js`), no CDN/external assets.
+- Blocking defects (must have NONE): reversed W/S or A/D vs what the player sees; movement not camera-relative after turning; crosshair not at exact viewport centre; crosshair-to-hit misalignment; zombie dying on 4th or surviving 5th valid hit; fatal page errors.
+- Movement: W = camera forward projected onto ground, S = opposite, A = strafe screen-left, D = strafe screen-right; pitch must NOT move player vertically.
+- Aim: authoritative ray from camera CENTRE (crosshair), NOT from gun barrel.
+- Two zombies: A stationary, B walks slowly toward player (stops ~dist<=2.2). Both block-built humanoids, health bar over head, exactly 5 HP (5th valid hit kills, not 4th/6th), dead zombie no longer targetable.
+- Evidence standard: separate mechanically verified / visually inspected / human-only in REPORT.md.
+
+## CURRENT PRODUCT STATE
+- Files: `index.html` (entry, viewport 1280x800), `game.js` (725 lines, whole game, ES module), `three.module.js` (vendored). Served `http://127.0.0.1:8802/` (curl 200).
+- Coordinate convention: logical (x,z) -> world (x, 0, -z). Spawn (0,0), yaw=0 -> camera fwd world (0,0,-1) = logical +Y.
+- `THREE` is NOT a page global (ES module import) — do NOT reference THREE in codex-browser eval. Use `H.getCamera()` and vector ctor via `cam.position.constructor`.
+- Hooks: `window.__AGENT_STATE__` (player logical+world, camera yaw/pitch/forward/position, crosshair {targetId,point,dist}, lastShot {hit,targetId,hpAfter,t}, kills, zombies[] {id,hp,alive,moving,logical,world}, ready, pointerLocked). `window.__THREE_GAME_TEST_HOOKS__` = `H`: fire, setYaw(rad), setPitch(rad), setPlayerPosition(lx,lz), setZombiePosition(id,lx,lz), resetZombieHp(id,hp), respawn, setDebugLabels, setCalibrationTarget(bool), getState, getCamera, projectToScreen(wx,wy,wz), projectLogical(lx,lz,h=0.5), holdKey(code), releaseKey(code), releaseAllKeys.
+- `fire()` gate: `if(!player.alive||!ready) return; if(fireCooldown>0) return;` — cooldown ~0.09s. Always wait >=0.25s between manual fire() calls in test sequences.
+- Zombie B stops moving at dist<=2.2 from player (moving=false after that).
+
+## COMPLETED (mechanically verified via codex-browser eval vs live page)
+1. **Spawn orientation (RULE ZERO screen-projection proof)** — spawn (0,0), yaw=0, pitch=0, camera fwd world (0,0,-1)=logical +Y:
+   - W (0,1): ndc.z=0.9<1, ndc.x=0 -> front/centre ✓
+   - S (0,-1): ndc.z=1.101>1 -> behind ✓
+   - A (-1,0) & D (1,0): pure-lateral points are in the near-plane -> project() yields NaN (expected math, NOT a bug). Proven via forward+diagonal points instead: diagForwardLeft ndc.x=-0.86 (screen left, sx=89), diagForwardRight ndc.x=+0.86 (screen right, sx=1191); camera rightWorld=(1,0,0). -> A=left, D=right ✓
+   - Diagonals: WA(-1,1) ndc.x=-0.86 left-front; WD(1,1) +0.86 right-front; SA/SD ndc.z=1.101 behind ✓
+   - **All 8 directions correct.**
+2. **Camera-relative movement** (holdKey + ~0.5s sleep + read `__AGENT_STATE__.player.logical`):
+   - yaw=0: W (0,+4.299), S (0,-4.298), A (-4.298,0), D (+3.999,0) ✓
+   - yaw=+90deg: W (+4.099,0), A (0,+4.398), D (0,-4.199) ✓
+   - yaw=-90deg: W (-3.999,0), A (0,-4.1), D (0,+4.499) ✓
+   - pitch=0.9 + W: playerY stays 1.7 (no vertical drift), moved z=+3.499 ✓
+3. **Crosshair DOM centre** = (640,400) = exact viewport centre (1280x800) ✓
+4. **Calibration ray agreement**: projectLogical(0,11,1.7) -> ndc(0,0), screen(640,400) = crosshair centre ✓
+5. **Core aim (crosshair->hit) works in fixed build** (re-confirmed THIS session): respawn, setZombiePosition('A',0,11), yaw=0/pitch=0, player (0,0) -> crosshair {targetId:'A', point (0,1.7,-10.79), dist 10.79} ✓
+6. **Near-miss (crosshair->no-hit) re-confirmed THIS session**: A at logical (1,11), yaw=0/pitch=0 -> crosshair=null, lastShot {hit:false,targetId:null} ✓ (A off-centre is NOT hit by centre ray)
+7. **Zombie A 5-hit kill (verified last session)**: respawn, A at (0,11), yaw/pitch 0, player (0,0). Crosshair target='A'. Fired 5x (0.25s gaps): hp 5->4->3->2->1->0, alive:false on the 5th hit. lastShot each time {hit:true,targetId:'A',hpAfter:...}. -> dies exactly on 5th valid hit (not 4th, not 6th) ✓ BLOCKING DEFECT #5 ABSENT.
+8. **projectToScreen root-cause fix** (game.js ~line 674): previously called camera.updateMatrixWorld(), which recomputed matrixWorld from the stale local matrix and clobbered the live camera transform (set each frame by syncCamera()), corrupting the next frame's aim ray -> phantom "crosshairTarget() returns null". Fix: removed that call; now projects against live camera.matrixWorld. Confirmed in place this session.
+
+## UNRESOLVED
+None blocking. Remaining work is FINALIZATION only:
+- Zombie B 5-hit kill sequence (not yet run in the fixed build).
+- Confirm dead zombie A is no longer targetable (crosshair null / fire miss after A dead).
+- Screenshots (2): both zombies + health bars + crosshair at centre; optional mid-kill reduced bar / hit flash.
+- Write REPORT.md.
+
+## LAST TEST
+Near-miss re-confirm: `H.setZombiePosition('A',1,11); H.setYaw(0); H.setPitch(0);` then read `__AGENT_STATE__` -> crosshair=null, lastShot {hit:false,targetId:null}. PASS (off-centre A not hit by centre ray). Immediately prior, A at (0,11) gave crosshair targetId='A'. Both confirm crosshair-to-hit alignment + near-miss in the fixed build.
+
+## NEXT INTENDED ACTION
+1. **Zombie B 5-hit kill**: respawn -> `H.setZombiePosition('B',0,11)` (B walks, so place at centre) -> `H.setYaw(0); H.setPitch(0); H.setPlayerPosition(0,0)` -> wait >=1 frame -> confirm crosshair targetId='B' -> fire 5x with >=0.25s gaps (shell `sleep 0.3` between codex-browser eval fire() calls) -> read `__AGENT_STATE__` after each: expect hp 5->4->3->2->1->0, alive:false on 5th, kills increments.
+2. **Dead-A-not-targetable**: with A dead (hp 0) at (0,11) and B elsewhere, confirm crosshair does NOT return 'A' and fire() -> hit:false for A. (Simplest: after B-kill test, respawn, kill A to 0 via 5 fires, then move B away, aim at (0,11) -> crosshair null.)
+3. **Screenshots**: hide overlay `document.getElementById('start').style.display='none'` (pointer-lock can't engage headless; pointerLocked=false is fine, logic still runs). respawn so both alive. Shot 1: both zombies + health bars + crosshair at centre -> `codex-browser screenshot /tmp/shot-1.png`. Shot 2 (optional): mid-kill showing reduced bar / hit flash -> `/tmp/shot-2.png`. `codex-browser screenshot` prints path+sha256+bytes.
+4. **Update this checkpoint** with the B-kill numbers + screenshot hashes.
+5. **Write REPORT.md** with evidence split into mechanically verified (all numbers above + orientation table + both 5-hit sequences + near-miss), visually inspected (screenshots), human-only (real pointer-lock/mouse-look feel — cannot automate). Include the screen-projection proof table and the two 5-hit sequences.
+6. **Stop.**
+
+## SKILLS
+Loaded (relevant): threejs-qa-release (test hooks __THREE_GAME_TEST_HOOKS__ / __AGENT_STATE__ convention, references/playtest-bot.md — automated playtest). threejs-debug-profiler (camera/input/transform debugging, references/debug-profile-checklists.md, references/checklists/scene-debugging.md). threejs-gameplay-systems (FPS controls, camera-relative movement, raycast/hit detection, update order, references/gameplay-workflows.md). threejs-game-ui-designer (crosshair/health bar). threejs-aaa-graphics-builder (block visuals). game-engine/game-developer (references/3d-web-games.md). threejs-game-director not needed.
+
+## EVIDENCE
+- Served: http://127.0.0.1:8802/ (index.html). curl 200.
+- Screenshots: none yet (need to hide start overlay, then codex-browser screenshot to /tmp).
+- Key verified numbers in COMPLETED section are the evidence base for REPORT.md.
+- No screenshot hashes committed yet.
+
+## DO NOT REPEAT
+- Do NOT accept internal consistency (HUD/labels/transform agreeing) as proof of orientation — must use screen-space projection (ndc signs / projected screen coords).
+- Do NOT reference THREE in codex-browser eval (not a global).
+- Do NOT read/copy code from other projects (clean room).
+- codex-browser eval does NOT await Promises/async — (async()=>{...})() returns {}. Use synchronous calls + shell `sleep` between separate codex-browser invocations so the rAF loop advances >=1 frame (camera re-syncs each frame). The old setInterval step-driver pattern was UNRELIABLE (callbacks never fired) — avoid it.
+- Camera re-syncs only on the next animation frame after setYaw/setPlayerPosition/setZombiePosition — always wait >=1 frame (shell sleep ~0.3-1s) before reading __AGENT_STATE__ or firing.
+- Pure-lateral projection is NaN (point in near-plane) — expected math, NOT a bug; prove A/D via forward+diagonal points or the camera right vector.
+- Never call camera.updateMatrixWorld() (or any transform recompute) from eval-side helpers between frames — it clobbers the live camera transform set by syncCamera() each frame.
+- Pointer lock can't be engaged headlessly; hide #start to screenshot in-game view.
+- fire() within the ~0.09s cooldown window is a no-op — always wait >=0.25s between fire() calls in test sequences.
+---
+total 2600
+drwxr-xr-x  12 user  staff      384 Aug 30 13:50 .
+drwxr-xr-x  35 user  staff     1120 Aug 30 13:41 ..
+drwxr-xr-x   3 user  staff       96 Aug 30 14:11 .agent-state
+drwxr-xr-x  10 user  staff      320 Aug 30 13:45 .git
+-rw-r--r--   1 user  staff      138 Aug 30 15:54 agent-status.json
+-rw-r--r--   1 user  staff     2142 Aug 30 13:42 AGENTS.md
+-rw-r--r--   1 user  staff     5529 Aug 30 13:43 GAME_GOAL.md
+-rw-r--r--   1 user  staff    27318 Aug 30 15:43 game.js
+-rw-r--r--   1 user  staff     3199 Aug 30 13:47 index.html
+drwxr-xr-x  34 user  staff     1088 Aug 30 15:54 sup-log
+-rw-r--r--   1 user  staff     5650 Aug 30 13:43 TASK_PROMPT.txt
+-rw-r--r--   1 user  staff  1272972 Aug 30 13:41 three.module.js
+
+codex
+I've read the checkpoint. Next intended action is the Zombie B 5-hit kill test, then dead-A-not-targetable, screenshots, and REPORT.md. Let me verify the server is still up and the page loads.
+
+
+exec
+/bin/zsh -lc "curl -s -o /dev/null -w \"%{http_code}\\n\" http://127.0.0.1:8802/ ; codex-browser help 2>&1 | head -40" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+200
+codex-browser — drive the sandbox-external browser. Output is bounded (large results saved to disk).
+COMMANDS
+  open <url>              load a page (e.g. open http://127.0.0.1:PORT/)
+  url | title             current url / page title
+  state                   compact JSON from the app's diagnostics hook (window.__AGENT_STATE__)
+  eval <js...>            run a JS expression in the page → bounded JSON   (e.g. eval document.title)
+  get <path>              read window.<path>; dots ok  (e.g. get __AGENT_STATE__.player.x)
+  click-id <id>           click #<id>       |  click <sel>   |  type <sel> <text>
+  key <k> | press <k>     one key press (e.g. key f)         |  hold <k> <ms>  (held movement)
+  screenshot [file]       save PNG to file; prints path + sha256 + bytes
+  snapshot                a11y + visible text + controls (bounded)
+  console | errors | network-errors     recent page logs (bounded)
+  reload | close | health
+TELEMETRY: in your app expose  window.__AGENT_STATE__  (an object, or a function returning compact
+JSON), then read it with `codex-browser state`. No obscure endpoints needed.
+
+exec
+/bin/zsh -lc 'codex-browser open http://127.0.0.1:8802/ && sleep 1.5 && codex-browser eval "({ready: window.__AGENT_STATE__?.ready, hooks: !!window.__THREE_GAME_TEST_HOOKS__})"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1726ms:
+{
+  "navigated": "http://127.0.0.1:8802/",
+  "url": "http://127.0.0.1:8802/",
+  "title": "Zombie FPS — block prototype"
+}
+{
+  "value": {
+    "ready": true,
+    "hooks": true
+  }
+}
+
+codex
+Page is up and hooks are live. Now running the Zombie B 5-hit kill sequence: respawn, place B at centre, verify crosshair locks B, then fire 5×.
+
+
+exec
+/bin/zsh -lc "H='codex-browser eval'; "'$H "window.__THREE_GAME_TEST_HOOKS__.respawn(); window.__THREE_GAME_TEST_HOOKS__.setZombiePosition('"'B',0,11); window.__THREE_GAME_TEST_HOOKS__.setYaw(0); window.__THREE_GAME_TEST_HOOKS__.setPitch(0); window.__THREE_GAME_TEST_HOOKS__.setPlayerPosition(0,0); 'ok'\" && sleep 1 && "'$H "JSON.stringify({cross: window.__AGENT_STATE__.crosshair, B: window.__AGENT_STATE__.zombies.find(z=>z.id==='"'B')})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ exited 127 in 0ms:
+zsh:1: command not found: codex-browser eval
+
+exec
+/bin/zsh -lc "codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.respawn(); window.__THREE_GAME_TEST_HOOKS__.setZombiePosition('B',0,11); window.__THREE_GAME_TEST_HOOKS__.setYaw(0); window.__THREE_GAME_TEST_HOOKS__.setPitch(0); window.__THREE_GAME_TEST_HOOKS__.setPlayerPosition(0,0); 'ok'\" && sleep 1 && codex-browser eval \"JSON.stringify({cross: window.__AGENT_STATE__.crosshair, B: window.__AGENT_STATE__.zombies.find(z=>z.id==='B')})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 981ms:
+{
+  "value": "{\"cross\":{\"targetId\":\"B\",\"point\":{\"x\":0,\"y\":1.7,\"z\":-9.92},\"dist\":9.92},\"B\":{\"id\":\"B\",\"hp\":5,\"alive\":true,\"moving\":true,\"logical\":{\"x\":0,\"z\":10.13},\"world\":{\"x\":0,\"y\":0.026,\"z\":-10.13}}}"
+}
+
+codex
+Crosshair locks B (hp 5, walking toward player). Now firing 5× with 0.3s gaps, reading state after each.
+
+
+exec
+/bin/zsh -lc "for i in 1 2 3 4 5; do codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.fire(); 'fired'\"; sleep 0.3; codex-browser eval \"JSON.stringify({shot: window.__AGENT_STATE__.lastShot, B: window.__AGENT_STATE__.zombies.find(z=>z.id==='B'), kills: window.__AGENT_STATE__.kills})\"; done" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1878ms:
+{
+  "value": "{\"shot\":{\"hit\":true,\"targetId\":\"B\",\"t\":13.861700000000043,\"hpAfter\":4},\"B\":{\"id\":\"B\",\"hp\":4,\"alive\":true,\"moving\":true,\"logical\":{\"x\":0,\"z\":6.426},\"world\":{\"x\":0,\"y\":0.001,\"z\":-6.426}},\"kills\":0}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":true,\"targetId\":\"B\",\"t\":14.178300000000046,\"hpAfter\":3},\"B\":{\"id\":\"B\",\"hp\":3,\"alive\":true,\"moving\":true,\"logical\":{\"x\":0,\"z\":6.126},\"world\":{\"x\":0,\"y\":0.039,\"z\":-6.126}},\"kills\":0}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":true,\"targetId\":\"B\",\"t\":14.478200000000047,\"hpAfter\":2},\"B\":{\"id\":\"B\",\"hp\":2,\"alive\":true,\"moving\":true,\"logical\":{\"x\":0,\"z\":5.796},\"world\":{\"x\":0,\"y\":0.012,\"z\":-5.796}},\"kills\":0}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":true,\"targetId\":\"B\",\"t\":14.84490000000005,\"hpAfter\":1},\"B\":{\"id\":\"B\",\"hp\":1,\"alive\":true,\"moving\":true,\"logical\":{\"x\":0,\"z\":5.466},\"world\":{\"x\":0,\"y\":0.037,\"z\":-5.466}},\"kills\":0}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":true,\"targetId\":\"B\",\"t\":15.261300000000057,\"hpAfter\":0},\"B\":{\"id\":\"B\",\"hp\":0,\"alive\":false,\"moving\":true,\"logical\":{\"x\":0,\"z\":5.421},\"world\":{\"x\":0,\"y\":0.325,\"z\":-5.421}},\"kills\":1}"
+}
+
+exec
+/bin/zsh -lc "codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.respawn(); window.__THREE_GAME_TEST_HOOKS__.setYaw(0); window.__THREE_GAME_TEST_HOOKS__.setPitch(0); window.__THREE_GAME_TEST_HOOKS__.setPlayerPosition(0,0); 'ok'\" && sleep 0.5 && for i in 1 2 3 4 5; do codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.fire(); 'fired'\"; sleep 0.3; codex-browser eval \"JSON.stringify({shot: window.__AGENT_STATE__.lastShot, A: window.__AGENT_STATE__.zombies.find(z=>z.id==='A')})\"; done" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 2428ms:
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":false,\"targetId\":null,\"t\":21.26000000000012},\"A\":{\"id\":\"A\",\"hp\":5,\"alive\":true,\"moving\":false,\"logical\":{\"x\":-2.5,\"z\":11},\"world\":{\"x\":-2.5,\"y\":0,\"z\":-11}}}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":false,\"targetId\":null,\"t\":21.643200000000125},\"A\":{\"id\":\"A\",\"hp\":5,\"alive\":true,\"moving\":false,\"logical\":{\"x\":-2.5,\"z\":11},\"world\":{\"x\":-2.5,\"y\":0,\"z\":-11}}}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":false,\"targetId\":null,\"t\":22.026400000000123},\"A\":{\"id\":\"A\",\"hp\":5,\"alive\":true,\"moving\":false,\"logical\":{\"x\":-2.5,\"z\":11},\"world\":{\"x\":-2.5,\"y\":0,\"z\":-11}}}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":false,\"targetId\":null,\"t\":22.40970000000013},\"A\":{\"id\":\"A\",\"hp\":5,\"alive\":true,\"moving\":false,\"logical\":{\"x\":-2.5,\"z\":11},\"world\":{\"x\":-2.5,\"y\":0,\"z\":-11}}}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":false,\"targetId\":null,\"t\":22.70960000000013},\"A\":{\"id\":\"A\",\"hp\":5,\"alive\":true,\"moving\":false,\"logical\":{\"x\":-2.5,\"z\":11},\"world\":{\"x\":-2.5,\"y\":0,\"z\":-11}}}"
+}
+
+codex
+A spawns at (-2.5, 11) — off-centre, so all shots missed (also re-confirms near-miss). Placing A at centre and re-running the 5-hit sequence.
+
+
+exec
+/bin/zsh -lc "codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.setZombiePosition('A',0,11); 'ok'\" && sleep 0.5 && codex-browser eval \"JSON.stringify({cross: window.__AGENT_STATE__.crosshair})\" && for i in 1 2 3 4 5; do codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.fire(); 'fired'\"; sleep 0.3; codex-browser eval \"JSON.stringify({shot: window.__AGENT_STATE__.lastShot, A: window.__AGENT_STATE__.zombies.find(z=>z.id==='A')})\"; done" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 2503ms:
+{
+  "value": "{\"cross\":{\"targetId\":\"A\",\"point\":{\"x\":0,\"y\":1.7,\"z\":-10.79},\"dist\":10.79}}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":true,\"targetId\":\"A\",\"t\":28.9414000000002,\"hpAfter\":4},\"A\":{\"id\":\"A\",\"hp\":4,\"alive\":true,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0,\"z\":-11}}}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":true,\"targetId\":\"A\",\"t\":29.291200000000206,\"hpAfter\":3},\"A\":{\"id\":\"A\",\"hp\":3,\"alive\":true,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0,\"z\":-11}}}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":true,\"targetId\":\"A\",\"t\":29.657900000000215,\"hpAfter\":2},\"A\":{\"id\":\"A\",\"hp\":2,\"alive\":true,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0,\"z\":-11}}}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":true,\"targetId\":\"A\",\"t\":29.89120000000021,\"hpAfter\":1},\"A\":{\"id\":\"A\",\"hp\":1,\"alive\":true,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0,\"z\":-11}}}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":true,\"targetId\":\"A\",\"t\":30.291200000000217,\"hpAfter\":0},\"A\":{\"id\":\"A\",\"hp\":0,\"alive\":false,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0.325,\"z\":-11}}}"
+}
+
+codex
+A: 5→4→3→2→1→0, dies on 5th ✓. Now proving dead-A-not-targetable: aim at (0,11) where A is dead, with B elsewhere.
+
+
+exec
+/bin/zsh -lc "codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.setZombiePosition('B',3,11); 'ok'\" && sleep 0.5 && codex-browser eval \"JSON.stringify({cross: window.__AGENT_STATE__.crosshair, A: window.__AGENT_STATE__.zombies.find(z=>z.id==='A')})\" && codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.fire(); 'fired'\" && sleep 0.3 && codex-browser eval \"JSON.stringify({shot: window.__AGENT_STATE__.lastShot, A: window.__AGENT_STATE__.zombies.find(z=>z.id==='A'), B: window.__AGENT_STATE__.zombies.find(z=>z.id==='B')})\"" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 883ms:
+{
+  "value": "{\"cross\":null,\"A\":{\"id\":\"A\",\"hp\":0,\"alive\":false,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0.25,\"z\":-11}}}"
+}
+{
+  "value": "fired"
+}
+{
+  "value": "{\"shot\":{\"hit\":false,\"targetId\":null,\"t\":37.40620000000001},\"A\":{\"id\":\"A\",\"hp\":0,\"alive\":false,\"moving\":false,\"logical\":{\"x\":0,\"z\":11},\"world\":{\"x\":0,\"y\":0.25,\"z\":-11}},\"B\":{\"id\":\"B\",\"hp\":5,\"alive\":true,\"moving\":true,\"logical\":{\"x\":2.826,\"z\":10.364},\"world\":{\"x\":2.826,\"y\":0.006,\"z\":-10.364}}}"
+}
+
+codex
+Dead-A-not-targetable confirmed. Now capturing screenshots: respawn, hide the start overlay, and shoot the in-game view.
+
+
+exec
+/bin/zsh -lc "codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.respawn(); document.getElementById('start').style.display='none'; 'ok'\" && sleep 1 && codex-browser screenshot /tmp/shot-1.png" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1460ms:
+saved: /tmp/shot-1.png sha256:8e9c53b2cbb9 bytes:88033
+
+exec
+/bin/zsh -lc "codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.setZombiePosition('A',0,11); window.__THREE_GAME_TEST_HOOKS__.setZombiePosition('B',0,7); window.__THREE_GAME_TEST_HOOKS__.setYaw(0); window.__THREE_GAME_TEST_HOOKS__.setPitch(0); window.__THREE_GAME_TEST_HOOKS__.setPlayerPosition(0,0); 'ok'\" && sleep 0.5 && codex-browser eval \"window.__THREE_GAME_TEST_HOOKS__.fire(); 'fired'\" && sleep 0.15 && codex-browser screenshot /tmp/shot-2.png" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 1081ms:
+{
+  "value": "fired"
+}
+saved: /tmp/shot-2.png sha256:83320f5a7f75 bytes:89576
+
+codex
+The gun/hands aren't visible in the screenshots. Let me check how they're positioned in the code.
+
+
+exec
+/bin/zsh -lc "grep -n \"gun\\|hand\\|muzzle\\|viewmodel\" game.js | head -40" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+255:  // hands
+428:const gunGroup = new THREE.Group();
+434:  // gun body
+437:  gunGroup.add(body);
+440:  gunGroup.add(barrel);
+443:  gunGroup.add(mag);
+447:  gunGroup.add(grip);
+451:  gunGroup.add(stock);
+452:  // arms: sleeves + hands
+457:    gunGroup.add(arm);
+458:    const hand = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.12), skin);
+459:    hand.position.set(side * 0.1, -0.1, side === 1 ? -0.28 : -0.05);
+460:    gunGroup.add(hand);
+462:  // muzzle flash (hidden)
+466:  gunGroup.add(flash);
+467:  gunGroup.userData.flash = flash;
+469:camera.add(gunGroup);
+470:gunGroup.position.set(0.22, -0.22, -0.45);
+609:  // gun animation
+615:  gunGroup.position.set(0.22 + bobX, -0.22 + bobY - recoil * 0.01, -0.45 + recoil * 0.04);
+616:  gunGroup.rotation.x = recoil * 0.06;
+617:  const flash = gunGroup.userData.flash;
+
+exec
+/bin/zsh -lc "sed -n 420,470p game.js; grep -n \"fov\\|near\\|far\" game.js | head" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+          best = { targetId: z.id, point: t, dist: d };
+        }
+      }
+    }
+  }
+  return best;
+}
+
+const gunGroup = new THREE.Group();
+{
+  const metal = new THREE.MeshStandardMaterial({ color: 0x3a3f45, roughness: 0.4, metalness: 0.7 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x23262a, roughness: 0.5, metalness: 0.5 });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xc9a17a, roughness: 0.8 });
+  const sleeve = new THREE.MeshStandardMaterial({ color: 0x33402e, roughness: 0.9 });
+  // gun body
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.5), metal);
+  body.position.set(0, 0, -0.25);
+  gunGroup.add(body);
+  const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.34), dark);
+  barrel.position.set(0, 0.02, -0.62);
+  gunGroup.add(barrel);
+  const mag = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.16, 0.09), dark);
+  mag.position.set(0, -0.1, -0.2);
+  gunGroup.add(mag);
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.14, 0.09), dark);
+  grip.position.set(0, -0.09, -0.02);
+  grip.rotation.x = 0.25;
+  gunGroup.add(grip);
+  // stock
+  const stock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.16), new THREE.MeshStandardMaterial({ color: 0x5a4632, roughness: 0.8 }));
+  stock.position.set(0, -0.02, 0.08);
+  gunGroup.add(stock);
+  // arms: sleeves + hands
+  for (const side of [-1, 1]) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.34), sleeve);
+    arm.position.set(side * 0.14, -0.12, 0.05);
+    arm.rotation.z = side * -0.18;
+    gunGroup.add(arm);
+    const hand = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.12), skin);
+    hand.position.set(side * 0.1, -0.1, side === 1 ? -0.28 : -0.05);
+    gunGroup.add(hand);
+  }
+  // muzzle flash (hidden)
+  const flash = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0 }));
+  flash.position.set(0, 0.02, -0.8);
+  gunGroup.add(flash);
+  gunGroup.userData.flash = flash;
+}
+camera.add(gunGroup);
+gunGroup.position.set(0.22, -0.22, -0.45);
+61:key.shadow.camera.far = 40;
+
+exec
+/bin/zsh -lc "grep -n \"PerspectiveCamera\\|camera =\\|camera\\.\" game.js | head -20" in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+45:const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.05, 200);
+48:  camera.aspect = window.innerWidth / window.innerHeight;
+49:  camera.updateProjectionMatrix();
+59:key.shadow.camera.left = -18; key.shadow.camera.right = 18;
+60:key.shadow.camera.top = 18; key.shadow.camera.bottom = -18;
+61:key.shadow.camera.far = 40;
+164:  camera.position.set(p.x, PLAYER_HEIGHT, p.z);
+165:  camera.quaternion.identity();
+166:  camera.rotateY(-player.yaw);
+167:  camera.rotateX(player.pitch);
+363:    z.barMesh.lookAt(camera.position);
+469:camera.add(gunGroup);
+675:  // Do NOT call camera.updateMatrixWorld() here: the camera's matrixWorld is
+
+codex
+The gun is at z=-0.45 with near plane 0.05, so it should be visible but appears cut off in the bottom-right. Let me check the camera's frustum and the gun group's projection.
+
+
+exec
+/bin/zsh -lc 'codex-browser eval "var H=window.__THREE_GAME_TEST_HOOKS__; var cam=H.getCamera(); var V=cam.position.constructor; var g=cam.children.find(function(c){return c.userData && c.userData.flash;}); var p=new V().copy(g.position); g.updateWorldMatrix(true,false); var wp=p.applyMatrix4(g.matrixWorld); var ndc=new V(wp.x,wp.y,wp.z).project(cam); JSON.stringify({gunWorld: {x:wp.x,y:wp.y,z:wp.z}, ndc:{x:ndc.x,y:ndc.y,z:ndc.z}, camPos:{x:cam.position.x,y:cam.position.y,z:cam.position.z}, fov:cam.fov, near:cam.near})"' in ~/side-projects/games/web/zombie-fps-local-ai
+ succeeded in 0ms:
+{
+  "value": "{\"gunWorld\":{\"x\":0.44167070356427035,\"y\":1.2557209915630116,\"z\":-0.9},\"ndc\":{\"x\":0.4221580355469756,\"y\":-0.6794417720639231,\"z\":0.8893612291961882},\"camPos\":{\"x\":0,\"y\":1.7,\"z\":0},\"fov\":72,\"near\":0.05}"
+}
+
+codex
+Gun ndc (0.42, -0.68) → screen (900, 643) — bottom-right, should be visible. Let me re-screenshot after firing to catch the muzzle flash and confirm the viewmodel renders.
+tokens used
+16,724
+Gun ndc (0.42, -0.68) → screen (900, 643) — bottom-right, should be visible. Let me re-screenshot after firing to catch the muzzle flash and confirm the viewmodel renders.
