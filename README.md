@@ -18,13 +18,20 @@ Goal       Two zombies. Five hits each. One stands still, one walks at you.
 
 | | |
 |---|---|
-| Model | Qwen3.8-27B (IQ4_KT mixed quant), served locally by ik_llama |
-| Harness | Codex CLI 0.149.1, 47,616-token context, reasoning effort `xhigh` |
+| Model | Qwen3.8, **26.9 B params** (26,895,998,464, measured from tensors), mixed IQ4_KT/IQ4_KS quant, 13.7 GiB |
+| Hardware | **RTX 5080 (16 GB)** · Ryzen 7 7700 · 64 GB DDR5 · one consumer desktop |
+| Server | ik_llama `llama-server`, 49,152 ctx, 1 slot, q4_0 KV + Hadamard, flash-attn on |
+| Harness | Codex CLI 0.149.1, 47,616-token client context, reasoning effort `xhigh` |
 | Duration | 2 h 26 m 22 s — 37 turns, 35 automatic continuations |
 | Context handling | 11 internal compactions, 6 threads, **0 context exhaustions** |
-| Inference | ~763 generations, 0 failures, 0 crashes, decode ≈44.7 tok/s |
+| Inference | 766 requests, 763 generations, **0 failures — `200` was the only status code in the entire log** |
+| Throughput | prefill 538 tok/s median · decode 44.7 tok/s median (n = 763) |
 | Human input | One sentence of playtest feedback, at 2 h 13 m |
 | Result | Accepted by the human after playing it |
+
+The model's native context is **262,144** tokens; this run used 47,616 of it, and the largest prompt reached
+41,800 — so nothing ever came near the ceiling. Both the client and backend datasets are reconciled against
+the same closed window and published as `VERIFIED` in [`docs/BENCHMARK.md`](docs/BENCHMARK.md).
 
 The orchestrating model (Claude) was deliberately fenced off: it transmitted the task, launched and
 supervised the worker, sent neutral "continue" prompts, and recorded timings. It did not write, debug, test
@@ -102,6 +109,18 @@ Some things were simply not measured, and the benchmark says so rather than gues
 VRAM over the run were never sampled, and the slot-occupancy monitor was pointed at the wrong port for most
 of the run, making all 1,714 of its samples useless. Those are recorded as unavailable. Reporting "0% busy"
 from connection-refused rows would have been a fabricated measurement.
+
+Two details worth singling out, because both cut against the tidy version of this story:
+
+- **The filename lied about the model, and the record was corrected.** The GGUF is named
+  `…IQ4_KT-attn_qkv-IQ4_KS…`, and that name was initially taken at face value. Reading the per-tensor types
+  out of the GGUF header instead showed there is **no fused `attn_qkv` tensor at all** (Q, K and V are
+  separate) and that `attn_v` is IQ5_KS — *higher* precision than the name implies. The filename is a label,
+  not evidence.
+- **Three requests produced no generation, and nobody knows why.** 746 POSTs from the client, 743 counted by
+  the client's own router, 763 generations. The discrepancy is documented down to the four unmatched
+  timestamps — and then explicitly *not* explained, because no field in either log establishes the cause. It
+  would have been easy to call it "explained"; it is only narrowed.
 
 Known limitation the model flagged itself: real pointer-lock *feel* cannot be automated. That is exactly
 where the one genuine defect hid.
